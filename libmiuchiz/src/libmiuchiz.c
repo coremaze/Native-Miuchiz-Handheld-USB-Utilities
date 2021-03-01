@@ -71,7 +71,7 @@ int miuchiz_handheld_create_all(struct Handheld*** handhelds) {
 void miuchiz_handheld_destroy_all(struct Handheld** handhelds) {
     if (handhelds != NULL) {
         for (struct Handheld** handheld = handhelds; *handheld != NULL; handheld++) {
-            free(*handheld);
+            miuchiz_handheld_destroy(*handheld);
         }
         free(handhelds);
     }
