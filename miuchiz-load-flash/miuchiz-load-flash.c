@@ -57,6 +57,7 @@ int main(int argc, char** argv) {
         printf("Writing page %d\n", pagenum);
 
         for (int retry = 0; retry < 5; retry++) {
+            lseek(fd, pagenum * sizeof(page), SEEK_SET);
             int read_result = read(fd, page, sizeof(page));
             if (read_result == -1) {
                 printf("Reading of page %d from file failed. Retrying.\n", pagenum);
