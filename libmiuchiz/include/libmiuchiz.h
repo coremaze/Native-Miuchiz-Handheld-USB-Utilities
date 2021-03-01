@@ -28,8 +28,16 @@ struct Handheld* miuchiz_handheld_create(const char* device);
  */
 void miuchiz_handheld_destroy(struct Handheld* handheld);
 
+/** 
+ *Opens device.
+ *@param handheld Pointer to a Handheld.
+ */
 int miuchiz_handheld_open(struct Handheld* handheld);
 
+/** 
+ *Closes device.
+ *@param handheld Pointer to a Handheld.
+ */
 void miuchiz_handheld_close(struct Handheld* handheld);
 
 /** 
