@@ -1,4 +1,6 @@
 #include "libmiuchiz.h"
+#include "commands.h"
+#include "timer.h"
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -8,16 +10,22 @@
 #include <glob.h>
 #include <unistd.h>
 
-
 #define MIUCHIZ_ALIGNMENT_SIZE              (4096)
 
-#define MIUCHIZ_SCSI_OPCODE_READ            (0x28)
-#define MIUCHIZ_SCSI_OPCODE_WRITE           (0x2A)
-#define MIUCHIZ_SCSI_OPCODE_WRITE_FILEMARKS (0x80)
-#define MIUCHIZ_SCSI_OPCODE_READ_REVERSE    (0x81)
-
-const char MIUCHIZ_SCSI_SEQ_WRITE_FILEMARKS[] = {MIUCHIZ_SCSI_OPCODE_WRITE_FILEMARKS, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-const char MIUCHIZ_SCSI_SEQ_READ_REVERSE[] =    {MIUCHIZ_SCSI_OPCODE_READ_REVERSE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+ssize_t miuchiz_time_write(int fd, const void *buf, size_t n) {
+    /*
+    Writing to the device without giving it enough time will make it stop
+    working. Even though write() shouldn't return early due to O_DIRECT,
+    the issue still happens.
+    */
+    ssize_t result;
+    struct Utimer timer;
+    miuchiz_utimer_start(&timer);
+    result = write(fd, buf, n);
+    miuchiz_utimer_end(&timer);
+    usleep(miuchiz_utimer_elapsed(&timer) / 3);
+    return result;
+}
 
 struct Handheld* miuchiz_handheld_create(const char* device) {
     struct Handheld* handheld = malloc(sizeof(struct Handheld));
@@ -94,7 +102,7 @@ int miuchiz_handheld_is_handheld(struct Handheld* handheld) {
     return is_handheld;
 }
 
-int miuchiz_handheld_write_sector(struct Handheld* handheld, int sector, const char* data, size_t ndata) {
+int miuchiz_handheld_write_sector(struct Handheld* handheld, int sector, const void* data, size_t ndata) {
     if (ndata < MIUCHIZ_SECTOR_SIZE) {
         return -2;
     }
@@ -103,8 +111,7 @@ int miuchiz_handheld_write_sector(struct Handheld* handheld, int sector, const c
     memcpy(aligned_buf, data, ndata);
 
     lseek(handheld->fd, sector * MIUCHIZ_SECTOR_SIZE, SEEK_SET);
-    int result = write(handheld->fd, aligned_buf, ndata);
-    usleep(1000);
+    int result = miuchiz_time_write(handheld->fd, aligned_buf, ndata);
     
     //miuchiz_hex_dump(aligned_buf, 0x20);
     if (result == -1) {
@@ -116,7 +123,7 @@ int miuchiz_handheld_write_sector(struct Handheld* handheld, int sector, const c
     return result;
 }
 
-int miuchiz_handheld_read_sector(struct Handheld* handheld, int sector, char* buf, size_t nbuf) {
+int miuchiz_handheld_read_sector(struct Handheld* handheld, int sector, void* buf, size_t nbuf) {
     if (nbuf < MIUCHIZ_SECTOR_SIZE) {
         return -2;
     }
@@ -141,7 +148,7 @@ int miuchiz_handheld_read_sector(struct Handheld* handheld, int sector, char* bu
     return result;
 }
 
-int miuchiz_handheld_send_scsi(struct Handheld* handheld, const char* data, size_t ndata) {
+int miuchiz_handheld_send_scsi(struct Handheld* handheld, const void* data, size_t ndata) {
     // Data needs to be a multiple of sector size
     size_t required_size = miuchiz_round_size_up(ndata, MIUCHIZ_SECTOR_SIZE); 
 
@@ -156,51 +163,80 @@ int miuchiz_handheld_send_scsi(struct Handheld* handheld, const char* data, size
     return result;
 }
 
-int miuchiz_handheld_read_page(struct Handheld* handheld, int page, char* buf, size_t nbuf) {
+int miuchiz_handheld_read_page(struct Handheld* handheld, int page, void* buf, size_t nbuf) {
     if (nbuf != MIUCHIZ_PAGE_SIZE) {
         return -3;
     }
 
-    struct __attribute__ ((packed)) {
-        int length; 
-        char data[MIUCHIZ_PAGE_SIZE];
-    } page_data;
+    int read_result;
 
-    miuchiz_handheld_send_scsi(handheld, MIUCHIZ_SCSI_SEQ_WRITE_FILEMARKS, sizeof(MIUCHIZ_SCSI_SEQ_WRITE_FILEMARKS));
+    // Write initiator to command interface
+    {
+        struct SCSIWriteFilemarksCommand* cmd = miuchiz_scsi_write_filemarks_command_create();
+        miuchiz_handheld_send_scsi(handheld, cmd, sizeof(*cmd));
+        miuchiz_scsi_write_filemarks_command_destroy(cmd);
+    }
 
-    const char read_seq[] = {MIUCHIZ_SCSI_OPCODE_READ, 0, 0, page>>8, page&0xFF};
-    miuchiz_handheld_send_scsi(handheld, read_seq, sizeof(read_seq));
+    // Tell command interface we want to read from this page
+    {
+        struct SCSIReadCommand* cmd = miuchiz_scsi_read_command_create(page);
+        miuchiz_handheld_send_scsi(handheld, cmd, sizeof(*cmd));
+        miuchiz_scsi_read_command_destroy(cmd);
+    }
 
-    int read_result = miuchiz_handheld_read_sector(handheld, MIUCHIZ_SECTOR_DATA_READ, (char*)&page_data, sizeof(page_data));
+    // Read response data from device's data output interface
+    {
+        struct __attribute__ ((packed)) {
+            int length; char data[MIUCHIZ_PAGE_SIZE];
+        } page_data;
 
-    memcpy(buf, page_data.data, nbuf);
+        read_result = miuchiz_handheld_read_sector(handheld, MIUCHIZ_SECTOR_DATA_READ, &page_data, sizeof(page_data));
 
-    miuchiz_handheld_send_scsi(handheld, MIUCHIZ_SCSI_SEQ_READ_REVERSE, sizeof(MIUCHIZ_SCSI_SEQ_READ_REVERSE));
+        memcpy(buf, page_data.data, nbuf);
+    }
+
+    // Send terminator to command interface
+    {
+        struct SCSIReadReverseCommand* cmd = miuchiz_scsi_read_reverse_command_create();
+        miuchiz_handheld_send_scsi(handheld, cmd, sizeof(*cmd));
+        miuchiz_scsi_read_reverse_command_destroy(cmd);
+    }
 
     return read_result;
 }
 
-int miuchiz_handheld_write_page(struct Handheld* handheld, int page, const char* buf, size_t nbuf) {
+int miuchiz_handheld_write_page(struct Handheld* handheld, int page, const void* buf, size_t nbuf) {
     if (nbuf != MIUCHIZ_PAGE_SIZE) {
         return -1;
     }
 
-    miuchiz_handheld_send_scsi(handheld, MIUCHIZ_SCSI_SEQ_WRITE_FILEMARKS, sizeof(MIUCHIZ_SCSI_SEQ_WRITE_FILEMARKS));
+    int write_result;
 
-    const char write_seq[] = {MIUCHIZ_SCSI_OPCODE_WRITE, // opcode 
-                              0, 0, page>>8, page&0xFF,  // destination, big endian
-                              0x00, 0x00, 0x10, 0x00     // size, big endian
-                              };
-    miuchiz_handheld_send_scsi(handheld, write_seq, sizeof(write_seq));
+    // Write initiator to command interface
+    {
+        struct SCSIWriteFilemarksCommand* cmd = miuchiz_scsi_write_filemarks_command_create();
+        miuchiz_handheld_send_scsi(handheld, cmd, sizeof(*cmd));
+        miuchiz_scsi_write_filemarks_command_destroy(cmd);
+    }
 
-    char* big_buf = malloc(nbuf*2);
-    memcpy(big_buf, buf, nbuf);
-    memcpy(big_buf+nbuf, buf, nbuf);
+    // Tell command interface we want to write to this page
+    {
+        struct SCSIWriteCommand* cmd = miuchiz_scsi_write_command_create(page, nbuf);
+        miuchiz_handheld_send_scsi(handheld, cmd, sizeof(*cmd));
+        miuchiz_scsi_write_command_destroy(cmd);
+    }
 
+    // Put our data into the data input interface
+    {
+        write_result = miuchiz_handheld_write_sector(handheld, MIUCHIZ_SECTOR_DATA_WRITE, buf, nbuf);
+    }
 
-    int write_result = miuchiz_handheld_write_sector(handheld, MIUCHIZ_SECTOR_DATA_WRITE, big_buf, 2*nbuf);
-
-    miuchiz_handheld_send_scsi(handheld, MIUCHIZ_SCSI_SEQ_READ_REVERSE, sizeof(MIUCHIZ_SCSI_SEQ_READ_REVERSE));
+    // Send terminator to command interface
+    {
+        struct SCSIReadReverseCommand* cmd = miuchiz_scsi_read_reverse_command_create();
+        miuchiz_handheld_send_scsi(handheld, cmd, sizeof(*cmd));
+        miuchiz_scsi_read_reverse_command_destroy(cmd);
+    }
 
     return write_result;
 }

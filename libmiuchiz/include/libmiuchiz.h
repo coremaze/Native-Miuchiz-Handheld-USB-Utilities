@@ -73,7 +73,7 @@ int miuchiz_handheld_is_handheld(struct Handheld* handheld);
  *        -1 if data failed to be written; errno will be filled.
  *        Otherwise, the number of bytes written.
  */
-int miuchiz_handheld_write_sector(struct Handheld* handheld, int sector, const char* data, size_t ndata);
+int miuchiz_handheld_write_sector(struct Handheld* handheld, int sector, const void* data, size_t ndata);
 
 /** 
  *Reads data from a sector of a Miuchiz handheld.
@@ -85,7 +85,7 @@ int miuchiz_handheld_write_sector(struct Handheld* handheld, int sector, const c
  *        -1 if data failed to be read; errno will be filled.
  *        Otherwise, the number of bytes read.
  */
-int miuchiz_handheld_read_sector(struct Handheld* handheld, int sector, char* buf, size_t nbuf);
+int miuchiz_handheld_read_sector(struct Handheld* handheld, int sector, void* buf, size_t nbuf);
 
 /** 
  *Writes a (SCSI) command to the command interface of a Miuchiz handheld.
@@ -94,7 +94,7 @@ int miuchiz_handheld_read_sector(struct Handheld* handheld, int sector, char* bu
  *@param ndata The size of the command.
  *@return miuchiz_handheld_write_sector error code or bytes written.
  */
-int miuchiz_handheld_send_scsi(struct Handheld* handheld, const char* data, size_t ndata);
+int miuchiz_handheld_send_scsi(struct Handheld* handheld, const void* data, size_t ndata);
 
 /** 
  *Reads a page (0x1000 bytes) from a Miuchiz handheld's flash memory.
@@ -104,7 +104,7 @@ int miuchiz_handheld_send_scsi(struct Handheld* handheld, const char* data, size
  *@param nbuf The size of the buffer to be filled.
  *@return miuchiz_handheld_read_sector error code or bytes read.
  */
-int miuchiz_handheld_read_page(struct Handheld* handheld, int page, char* buf, size_t nbuf);
+int miuchiz_handheld_read_page(struct Handheld* handheld, int page, void* buf, size_t nbuf);
 
 /** 
  *Writes a page (0x1000 bytes) to a Miuchiz handheld's flash memory.
@@ -114,7 +114,7 @@ int miuchiz_handheld_read_page(struct Handheld* handheld, int page, char* buf, s
  *@param nbuf The size of the data.
  *@return -3 if buf is not exactly 1 page large, miuchiz_handheld_read_sector error code, or bytes written.
  */
-int miuchiz_handheld_write_page(struct Handheld* handheld, int page, const char* buf, size_t nbuf);
+int miuchiz_handheld_write_page(struct Handheld* handheld, int page, const void* buf, size_t nbuf);
 
 /** 
  *Rounds n up to the nearest multiple of alignment.
