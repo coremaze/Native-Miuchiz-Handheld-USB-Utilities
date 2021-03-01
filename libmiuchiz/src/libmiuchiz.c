@@ -104,7 +104,8 @@ int miuchiz_handheld_write_sector(struct Handheld* handheld, int sector, const c
 
     lseek(handheld->fd, sector * MIUCHIZ_SECTOR_SIZE, SEEK_SET);
     int result = write(handheld->fd, aligned_buf, ndata);
-
+    usleep(1000);
+    
     //miuchiz_hex_dump(aligned_buf, 0x20);
     if (result == -1) {
         printf("miuchiz_handheld_write_sector failed. [%d] %s\n", errno, strerror(errno));
