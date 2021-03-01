@@ -78,8 +78,6 @@ int main(int argc, char** argv) {
             printf("Reading of page %d has failed too many times.\n", pagenum);
             break;
         }
-
-        write(fd, page, sizeof(page));
     }
 
     close(fd);
