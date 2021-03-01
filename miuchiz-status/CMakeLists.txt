@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.0.0)
+set(LOCAL_PROJECT_NAME miuchiz-status)
+project(${LOCAL_PROJECT_NAME} VERSION 0.1.0)
+include_directories(../libmiuchiz/include)
+add_executable(${LOCAL_PROJECT_NAME} miuchiz-status.c)
+target_link_libraries(${LOCAL_PROJECT_NAME} miuchiz) 
+INSTALL(TARGETS ${LOCAL_PROJECT_NAME} DESTINATION bin)
