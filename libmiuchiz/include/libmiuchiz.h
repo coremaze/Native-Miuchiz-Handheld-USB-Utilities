@@ -5,6 +5,7 @@
 #define MIUCHIZ_SECTOR_DATA_READ (0x58)
 #define MIUCHIZ_SECTOR_DATA_WRITE (0x33)
 #define MIUCHIZ_PAGE_SIZE (0x1000)
+#define MIUCHIZ_PAGE_COUNT (0x200)
 
 struct Handheld {
     char* device;

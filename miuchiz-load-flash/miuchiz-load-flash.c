@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include "timer.h"
 
 int main(int argc, char** argv) {
     // Validate arguments
@@ -44,29 +45,44 @@ int main(int argc, char** argv) {
     size_t file_size = lseek(fd, 0, SEEK_END);
 
     if (file_size != MIUCHIZ_PAGE_SIZE * 0x200) {
-        printf("Flash file must be 0x%X bytes.\n", MIUCHIZ_PAGE_SIZE * 0x200);
+        printf("Flash file must be 0x%X bytes.\n", MIUCHIZ_PAGE_SIZE * MIUCHIZ_PAGE_COUNT);
         miuchiz_handheld_destroy_all(handhelds);
         return 1;
     }
 
     struct Handheld* handheld = handhelds[0];
 
-    for (int pagenum = 0; pagenum < 0x200; pagenum++) {
-        int success = 0;
+    struct Utimer timer;
+    miuchiz_utimer_start(&timer);
+
+    int success = 0;
+    for (int pagenum = 0; pagenum < MIUCHIZ_PAGE_COUNT; pagenum++) {
+        success = 0;
         char page[MIUCHIZ_PAGE_SIZE] = { 0 };
-        printf("Writing page %d\n", pagenum);
+
+        miuchiz_utimer_end(&timer);
+        int seconds = miuchiz_utimer_elapsed(&timer) / 1000000;
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+        printf("\r[%02d:%02d] Writing page %d/%d (%d%%)", 
+               minutes,
+               seconds,
+               pagenum + 1,
+               MIUCHIZ_PAGE_COUNT,
+               (100 * pagenum + 1) / MIUCHIZ_PAGE_COUNT);
+        fflush(stdout);
 
         for (int retry = 0; retry < 5; retry++) {
             lseek(fd, pagenum * sizeof(page), SEEK_SET);
             int read_result = read(fd, page, sizeof(page));
             if (read_result == -1) {
-                printf("Reading of page %d from file failed. Retrying.\n", pagenum);
+                printf("\rReading of page %d from file failed. Retrying.\n", pagenum);
                 continue;
             }
             
             int write_result = miuchiz_handheld_write_page(handheld, pagenum, page, sizeof(page));
             if (write_result == -1) {
-                printf("Writing of page %d to device failed. Retrying.\n", pagenum);
+                printf("\rWriting of page %d to device failed. Retrying.\n", pagenum);
                 continue;
             }
 
@@ -75,9 +91,13 @@ int main(int argc, char** argv) {
         }
 
         if (success == 0) {
-            printf("Reading of page %d has failed too many times.\n", pagenum);
+            printf("\rReading of page %d has failed too many times.\n", pagenum);
             break;
         }
+    }
+
+    if (success) {
+        printf("\n");
     }
 
     close(fd);
