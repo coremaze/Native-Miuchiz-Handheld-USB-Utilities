@@ -122,7 +122,7 @@ int miuchiz_handheld_read_page(struct Handheld* handheld, int page, void* buf, s
  *@param page The page to be read (0x0000 ~ 0x01FF normally).
  *@param buf A pointer to data to write.
  *@param nbuf The size of the data.
- *@return -3 if buf is not exactly 1 page large, miuchiz_handheld_read_sector error code, or bytes written.
+ *@return -3 if buf is not 1 sector or larger, miuchiz_handheld_read_sector error code, or bytes written.
  */
 int miuchiz_handheld_write_page(struct Handheld* handheld, int page, const void* buf, size_t nbuf);
 
