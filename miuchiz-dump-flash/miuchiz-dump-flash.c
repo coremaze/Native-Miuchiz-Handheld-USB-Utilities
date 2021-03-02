@@ -1,4 +1,5 @@
 #include "libmiuchiz.h"
+#include "timer.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -43,15 +44,30 @@ int main(int argc, char** argv) {
 
     struct Handheld* handheld = handhelds[0];
 
-    for (int pagenum = 0; pagenum < 0x200; pagenum++) {
-        int success = 0;
+    struct Utimer timer;
+    miuchiz_utimer_start(&timer);
+
+    int success = 0;
+    for (int pagenum = 0; pagenum < MIUCHIZ_PAGE_COUNT; pagenum++) {
+        success = 0;
         char page[MIUCHIZ_PAGE_SIZE] = { 0 };
-        printf("Reading page %d\n", pagenum);
+
+        miuchiz_utimer_end(&timer);
+        int seconds = miuchiz_utimer_elapsed(&timer) / 1000000;
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+        printf("\r[%02d:%02d] Reading page %d/%d (%d%%)", 
+               minutes,
+               seconds,
+               pagenum + 1,
+               MIUCHIZ_PAGE_COUNT,
+               (100 * (pagenum + 1)) / MIUCHIZ_PAGE_COUNT);
+        fflush(stdout);
 
         for (int retry = 0; retry < 5; retry++) {
             int read_result = miuchiz_handheld_read_page(handheld, pagenum, page, sizeof(page));
             if (read_result == -1) {
-                printf("Reading of page %d failed. Retrying.\n", pagenum);
+                printf("\rReading of page %d failed. Retrying.\n", pagenum);
             }
             else {
                 success = 1;
@@ -60,11 +76,15 @@ int main(int argc, char** argv) {
         }
 
         if (success == 0) {
-            printf("Reading of page %d has failed too many times.\n", pagenum);
+            printf("\rReading of page %d has failed too many times.\n", pagenum);
             break;
         }
 
         write(fd, page, sizeof(page));
+    }
+
+    if (success) {
+        printf("\n");
     }
 
     close(fd);
