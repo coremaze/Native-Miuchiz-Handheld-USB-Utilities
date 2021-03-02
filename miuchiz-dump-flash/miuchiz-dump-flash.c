@@ -35,8 +35,8 @@ int main(int argc, char** argv) {
     }
 
     char* filename = argv[1];
-    int fd = open(filename, O_WRONLY | O_CREAT);
-    if (fd < 0) {
+    FILE* fp = fopen(filename, "wb");
+    if (fp == NULL) {
         printf("Unable to open %s for writing. [%d] %s\n", filename, errno, strerror(errno));
         miuchiz_handheld_destroy_all(handhelds);
         return 1;
@@ -80,14 +80,14 @@ int main(int argc, char** argv) {
             break;
         }
 
-        int write_result = write(fd, page, sizeof(page));
+        size_t write_result = fwrite(page, 1, sizeof(page), fp);
     }
 
     if (success) {
         printf("\n");
     }
 
-    close(fd);
+    fclose(fp);
     miuchiz_handheld_destroy_all(handhelds);
     return 0;
 }

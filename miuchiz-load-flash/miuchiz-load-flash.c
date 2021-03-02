@@ -35,16 +35,17 @@ int main(int argc, char** argv) {
     }
 
     char* filename = argv[1];
-    int fd = open(filename, O_RDONLY);
-    if (fd < 0) {
+    FILE* fp = fopen(filename, "rb");
+    if (fp == NULL) {
         printf("Unable to open %s for writing. [%d] %s\n", filename, errno, strerror(errno));
         miuchiz_handheld_destroy_all(handhelds);
         return 1;
     }
 
-    size_t file_size = lseek(fd, 0, SEEK_END);
+    fseek(fp, 0, SEEK_END);
+    size_t file_size = ftell(fp);
 
-    if (file_size != MIUCHIZ_PAGE_SIZE * 0x200) {
+    if (file_size != MIUCHIZ_PAGE_SIZE * MIUCHIZ_PAGE_COUNT) {
         printf("Flash file must be 0x%X bytes.\n", MIUCHIZ_PAGE_SIZE * MIUCHIZ_PAGE_COUNT);
         miuchiz_handheld_destroy_all(handhelds);
         return 1;
@@ -73,9 +74,9 @@ int main(int argc, char** argv) {
         fflush(stdout);
 
         for (int retry = 0; retry < 5; retry++) {
-            lseek(fd, pagenum * sizeof(page), SEEK_SET);
-            int read_result = read(fd, page, sizeof(page));
-            if (read_result == -1) {
+            fseek(fp, pagenum * sizeof(page), SEEK_SET);
+            size_t read_result = fread(page, 1, sizeof(page), fp);
+            if (read_result != sizeof(page)) {
                 printf("\rReading of page %d from file failed. Retrying.\n", pagenum);
                 continue;
             }
@@ -100,7 +101,7 @@ int main(int argc, char** argv) {
         printf("\n");
     }
 
-    close(fd);
+    fclose(fp);
     miuchiz_handheld_destroy_all(handhelds);
     return 0;
 }

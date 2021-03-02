@@ -42,7 +42,19 @@ ssize_t _miuchiz_handheld_write(struct Handheld* handheld, const void *buf, size
     #endif
 
     miuchiz_utimer_end(&timer);
-    usleep(miuchiz_utimer_elapsed(&timer) / 3);
+
+    uint64_t usecs_to_sleep = miuchiz_utimer_elapsed(&timer) / 3;
+
+    #if defined(unix) || defined(__unix__) || defined(__unix)
+    usleep(usecs_to_sleep);
+    #elif defined(_WIN32)
+    int msecs_to_sleep = miuchiz_round_size_up(usecs_to_sleep, 1000) / 1000;
+    if (msecs_to_sleep == 0) {
+        msecs_to_sleep = 1;
+    }
+    Sleep(msecs_to_sleep);
+    #endif
+    
     return result;
 }
 
