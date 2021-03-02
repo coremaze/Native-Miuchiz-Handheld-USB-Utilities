@@ -1,3 +1,5 @@
+#ifndef MIUCHIZ_LIBMIUCHIZ_COMMANDS_H
+#define MIUCHIZ_LIBMIUCHIZ_COMMANDS_H
 #include <inttypes.h>
 
 struct __attribute__ ((packed)) SCSIReadCommand {
@@ -30,3 +32,5 @@ void miuchiz_scsi_read_reverse_command_destroy(struct SCSIReadReverseCommand* cm
 
 struct SCSIWriteFilemarksCommand* miuchiz_scsi_write_filemarks_command_create();
 void miuchiz_scsi_write_filemarks_command_destroy(struct SCSIWriteFilemarksCommand* cmd);
+
+#endif

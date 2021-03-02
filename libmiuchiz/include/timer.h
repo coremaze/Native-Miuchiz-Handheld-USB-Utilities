@@ -1,3 +1,6 @@
+#ifndef MIUCHIZ_LIBMIUCHIZ_TIMER_H
+#define MIUCHIZ_LIBMIUCHIZ_TIMER_H
+
 #include <time.h>
 #include <inttypes.h>
 
@@ -15,3 +18,5 @@ struct Utimer {
 void miuchiz_utimer_start(struct Utimer* t);
 void miuchiz_utimer_end(struct Utimer* t);
 uint64_t miuchiz_utimer_elapsed(struct Utimer* t);
+
+#endif

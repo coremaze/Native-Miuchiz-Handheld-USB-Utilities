@@ -19,7 +19,7 @@
 
 // Internal functions
 
-ssize_t _miuchiz_handheld_write(struct Handheld* handheld, const void *buf, size_t n) {
+static ssize_t _miuchiz_handheld_write(struct Handheld* handheld, const void *buf, size_t n) {
     /*
     Writing to the device without giving it enough time will make it stop
     working. Even though write() shouldn't return early due to O_DIRECT,
@@ -58,7 +58,7 @@ ssize_t _miuchiz_handheld_write(struct Handheld* handheld, const void *buf, size
     return result;
 }
 
-ssize_t _miuchiz_handheld_read(struct Handheld* handheld, void* buf, size_t nbytes) {
+static ssize_t _miuchiz_handheld_read(struct Handheld* handheld, void* buf, size_t nbytes) {
     ssize_t result = 0;
     #if defined(unix) || defined(__unix__) || defined(__unix)
     result = read(handheld->fd, buf, nbytes);
@@ -74,7 +74,7 @@ ssize_t _miuchiz_handheld_read(struct Handheld* handheld, void* buf, size_t nbyt
     return result;
 }
 
-off_t _miuchiz_handheld_seek(struct Handheld* handheld, off_t offset) {
+static off_t _miuchiz_handheld_seek(struct Handheld* handheld, off_t offset) {
     #if defined(unix) || defined(__unix__) || defined(__unix)
     return lseek(handheld->fd, offset, SEEK_SET);
     #elif defined(_WIN32)
@@ -82,7 +82,7 @@ off_t _miuchiz_handheld_seek(struct Handheld* handheld, off_t offset) {
     #endif
 }
 
-void* _miuchiz_dma_alloc(size_t size) {
+static void* _miuchiz_dma_alloc(size_t size) {
     #if defined(unix) || defined(__unix__) || defined(__unix)
     return aligned_alloc(miuchiz_page_alignment(), size);
     #elif defined(_WIN32)
@@ -90,7 +90,7 @@ void* _miuchiz_dma_alloc(size_t size) {
     #endif
 }
 
-void _miuchiz_dma_free(void* p) {
+static void _miuchiz_dma_free(void* p) {
     free(p);
 }
 

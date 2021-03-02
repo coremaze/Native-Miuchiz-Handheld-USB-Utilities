@@ -1,3 +1,5 @@
+#ifndef MIUCHIZ_LIBMIUCHIZ_LIBMIUCHIZ_H
+#define MIUCHIZ_LIBMIUCHIZ_LIBMIUCHIZ_H
 #include <unistd.h>
 
 #if defined(unix) || defined(__unix__) || defined(__unix)
@@ -144,3 +146,5 @@ void miuchiz_hex_dump(const void* buffer, size_t n);
  *@return Alignment required.
  */
 long miuchiz_page_alignment();
+
+#endif
