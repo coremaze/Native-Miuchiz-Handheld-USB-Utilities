@@ -126,7 +126,13 @@ size_t miuchiz_round_size_up(size_t n, int alignment);
 
 /** 
  *Prints a hex dump to the screen.
- *@param buffer data to be dumped.
- *@param n size of data.
+ *@param buffer Data to be dumped.
+ *@param n Size of data.
  */
 void miuchiz_hex_dump(const void* buffer, size_t n);
+
+/** 
+ *Gets the memory alignment needed to write to the device.
+ *@return Alignment required.
+ */
+long miuchiz_page_alignment();

@@ -10,8 +10,6 @@
 #include <glob.h>
 #include <unistd.h>
 
-#define MIUCHIZ_ALIGNMENT_SIZE              (4096)
-
 ssize_t miuchiz_time_write(int fd, const void *buf, size_t n) {
     /*
     Writing to the device without giving it enough time will make it stop
@@ -107,7 +105,7 @@ int miuchiz_handheld_write_sector(struct Handheld* handheld, int sector, const v
         return -2;
     }
 
-    char* aligned_buf = aligned_alloc(MIUCHIZ_ALIGNMENT_SIZE, ndata);
+    char* aligned_buf = aligned_alloc(miuchiz_page_alignment(), ndata);
     memcpy(aligned_buf, data, ndata);
 
     lseek(handheld->fd, sector * MIUCHIZ_SECTOR_SIZE, SEEK_SET);
@@ -131,7 +129,7 @@ int miuchiz_handheld_read_sector(struct Handheld* handheld, int sector, void* bu
     // Data needs to be a multiple of sector size
     size_t required_size = miuchiz_round_size_up(nbuf, MIUCHIZ_SECTOR_SIZE); 
 
-    char* aligned_buf = aligned_alloc(MIUCHIZ_ALIGNMENT_SIZE, required_size);
+    char* aligned_buf = aligned_alloc(miuchiz_page_alignment(), required_size);
 
     lseek(handheld->fd, sector * MIUCHIZ_SECTOR_SIZE, SEEK_SET);
     int result = read(handheld->fd, aligned_buf, required_size);
@@ -152,7 +150,7 @@ int miuchiz_handheld_send_scsi(struct Handheld* handheld, const void* data, size
     // Data needs to be a multiple of sector size
     size_t required_size = miuchiz_round_size_up(ndata, MIUCHIZ_SECTOR_SIZE); 
 
-    char* padded_data = aligned_alloc(MIUCHIZ_ALIGNMENT_SIZE, MIUCHIZ_SECTOR_SIZE);
+    char* padded_data = aligned_alloc(miuchiz_page_alignment(), MIUCHIZ_SECTOR_SIZE);
     memset(padded_data, 0, required_size);
     memcpy(padded_data, data, ndata);
 
@@ -272,4 +270,15 @@ void miuchiz_hex_dump(const void* buffer, size_t n) {
     if (n != 0) {
         printf("\n");
     }
+}
+
+long miuchiz_page_alignment() {
+    static long page_size = 0;
+    if (page_size == 0) {
+        page_size = sysconf(_SC_PAGESIZE);
+        if (page_size < MIUCHIZ_SECTOR_SIZE) {
+            page_size = MIUCHIZ_SECTOR_SIZE;
+        }
+    }
+    return page_size;
 }
