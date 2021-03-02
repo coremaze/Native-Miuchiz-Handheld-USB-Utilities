@@ -10,6 +10,8 @@
 #include <glob.h>
 #include <unistd.h>
 
+#define LOG_ERRORS 0
+
 ssize_t miuchiz_time_write(int fd, const void *buf, size_t n) {
     /*
     Writing to the device without giving it enough time will make it stop
@@ -112,7 +114,7 @@ int miuchiz_handheld_write_sector(struct Handheld* handheld, int sector, const v
     int result = miuchiz_time_write(handheld->fd, aligned_buf, ndata);
     
     //miuchiz_hex_dump(aligned_buf, 0x20);
-    if (result == -1) {
+    if (LOG_ERRORS && result == -1) {
         printf("miuchiz_handheld_write_sector failed. [%d] %s\n", errno, strerror(errno));
     }
 
@@ -137,8 +139,8 @@ int miuchiz_handheld_read_sector(struct Handheld* handheld, int sector, void* bu
     if (result >= 0) {
         memcpy(buf, aligned_buf, nbuf);
     }
-    else {
-        // printf("miuchiz_handheld_read_sector failed. [%d] %s\n", errno, strerror(errno));
+    else if (LOG_ERRORS) {
+        printf("miuchiz_handheld_read_sector failed. [%d] %s\n", errno, strerror(errno));
     }
 
     free(aligned_buf);
@@ -205,7 +207,7 @@ int miuchiz_handheld_read_page(struct Handheld* handheld, int page, void* buf, s
 
 int miuchiz_handheld_write_page(struct Handheld* handheld, int page, const void* buf, size_t nbuf) {
     if (nbuf != MIUCHIZ_PAGE_SIZE) {
-        return -1;
+        return -3;
     }
 
     int write_result;
