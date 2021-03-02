@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
                seconds,
                pagenum + 1,
                MIUCHIZ_PAGE_COUNT,
-               (100 * pagenum + 1) / MIUCHIZ_PAGE_COUNT);
+               (100 * (pagenum + 1)) / MIUCHIZ_PAGE_COUNT);
         fflush(stdout);
 
         for (int retry = 0; retry < 5; retry++) {
