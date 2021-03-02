@@ -289,7 +289,7 @@ int miuchiz_handheld_send_scsi(struct Handheld* handheld, const void* data, size
 }
 
 int miuchiz_handheld_read_page(struct Handheld* handheld, int page, void* buf, size_t nbuf) {
-    if (nbuf != MIUCHIZ_PAGE_SIZE) {
+    if (nbuf <= MIUCHIZ_SECTOR_SIZE) {
         return -3;
     }
 
@@ -312,7 +312,7 @@ int miuchiz_handheld_read_page(struct Handheld* handheld, int page, void* buf, s
     // Read response data from device's data output interface
     {
         struct __attribute__ ((packed)) {
-            int length; char data[MIUCHIZ_PAGE_SIZE];
+            int length_be; char data[nbuf];
         } page_data;
 
         read_result = miuchiz_handheld_read_sector(handheld, MIUCHIZ_SECTOR_DATA_READ, &page_data, sizeof(page_data));
