@@ -1,14 +1,14 @@
-#include <stdlib.h>
+#include <inttypes.h>
 
 struct __attribute__ ((packed)) SCSIReadCommand {
     char opcode;
-    u_int32_t source_page_be;
+    uint32_t source_page_be;
 };
 
 struct __attribute__ ((packed)) SCSIWriteCommand {
     char opcode;
-    u_int32_t destination_page_be;
-    u_int32_t payload_size_be;
+    uint32_t destination_page_be;
+    uint32_t payload_size_be;
 };
 
 struct __attribute__ ((packed)) SCSIReadReverseCommand {
@@ -19,10 +19,10 @@ struct __attribute__ ((packed)) SCSIWriteFilemarksCommand {
     char opcode;
 };
 
-struct SCSIReadCommand* miuchiz_scsi_read_command_create(u_int32_t source_page);
+struct SCSIReadCommand* miuchiz_scsi_read_command_create(uint32_t source_page);
 void miuchiz_scsi_read_command_destroy(struct SCSIReadCommand* cmd);
 
-struct SCSIWriteCommand* miuchiz_scsi_write_command_create(u_int32_t destination_page, u_int32_t payload_size);
+struct SCSIWriteCommand* miuchiz_scsi_write_command_create(uint32_t destination_page, uint32_t payload_size);
 void miuchiz_scsi_write_command_destroy(struct SCSIWriteCommand* cmd);
 
 struct SCSIReadReverseCommand* miuchiz_scsi_read_reverse_command_create();

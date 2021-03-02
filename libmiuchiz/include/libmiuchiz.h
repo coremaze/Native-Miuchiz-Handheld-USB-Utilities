@@ -1,5 +1,12 @@
 #include <unistd.h>
 
+#if defined(unix) || defined(__unix__) || defined(__unix)
+#define fp_t int
+#elif defined(_WIN32)
+#include "fileapi.h"
+#define fp_t HANDLE
+#endif
+
 #define MIUCHIZ_SECTOR_SIZE (512)
 #define MIUCHIZ_SECTOR_SCSI_WRITE (0x31)
 #define MIUCHIZ_SECTOR_DATA_READ (0x58)
@@ -9,7 +16,7 @@
 
 struct Handheld {
     char* device;
-    int fd;
+    fp_t fd;
 };
 
 /** 
@@ -33,7 +40,7 @@ void miuchiz_handheld_destroy(struct Handheld* handheld);
  *Opens device.
  *@param handheld Pointer to a Handheld.
  */
-int miuchiz_handheld_open(struct Handheld* handheld);
+fp_t miuchiz_handheld_open(struct Handheld* handheld);
 
 /** 
  *Closes device.

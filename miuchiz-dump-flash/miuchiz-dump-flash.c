@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
             break;
         }
 
-        write(fd, page, sizeof(page));
+        int write_result = write(fd, page, sizeof(page));
     }
 
     if (success) {
