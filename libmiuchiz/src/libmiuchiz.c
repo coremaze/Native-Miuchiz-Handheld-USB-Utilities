@@ -152,6 +152,7 @@ int miuchiz_handheld_create_all(struct Handheld*** handhelds) {
             }
         }
     }
+    globfree(&globbuf);
     #elif defined(_WIN32)
     // Get all the drive letters mounted
     unsigned int mask = GetLogicalDrives();
