@@ -15,7 +15,7 @@
 #include <windows.h>
 #endif
 
-#define LOG_ERRORS 1
+#define LOG_ERRORS 0
 
 // Internal functions
 
@@ -211,10 +211,10 @@ void miuchiz_handheld_destroy_all(struct Handheld** handhelds) {
 
 int miuchiz_handheld_is_handheld(struct Handheld* handheld) {
     char* data = malloc(MIUCHIZ_SECTOR_SIZE);
-    int read = miuchiz_handheld_read_sector(handheld, 0, data, MIUCHIZ_SECTOR_SIZE);
+    int bytes_read = miuchiz_handheld_read_sector(handheld, 0, data, MIUCHIZ_SECTOR_SIZE);
     int is_handheld;
 
-    if (read < MIUCHIZ_SECTOR_SIZE) {
+    if (bytes_read < MIUCHIZ_SECTOR_SIZE) {
         is_handheld = 0;
     }
     else {
