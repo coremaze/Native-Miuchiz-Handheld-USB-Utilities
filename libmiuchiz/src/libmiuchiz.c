@@ -312,7 +312,7 @@ int miuchiz_handheld_read_page(struct Handheld* handheld, int page, void* buf, s
     // Read response data from device's data output interface
     {
         struct __attribute__ ((packed)) {
-            int length_be; char data[nbuf];
+            int32_t length_be; char data[nbuf];
         } page_data;
 
         read_result = miuchiz_handheld_read_sector(handheld, MIUCHIZ_SECTOR_DATA_READ, &page_data, sizeof(page_data));
