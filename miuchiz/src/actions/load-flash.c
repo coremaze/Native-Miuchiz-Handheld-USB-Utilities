@@ -1,16 +1,20 @@
-#include "libmiuchiz.h"
+#include "libmiuchiz-usb.h"
+#include "timer.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <getopt.h>
 #include <string.h>
 
 struct args {
     char* device;
+    char* infile;
 };
 
 static void usage(char* program_name) {
-    fprintf(stderr, "Usage: %s [-d device]\n", program_name);
+    fprintf(stderr, "Usage: %s [-d device] infile\n", program_name);
 }
 
 static int args_parse(struct args* args, int argc, char** argv) {
@@ -34,6 +38,8 @@ static int args_parse(struct args* args, int argc, char** argv) {
         }
     }
 
+    if (optind < argc) args->infile = strdup(argv[optind++]); else return 1;
+
     if (optind < argc) {
         return 1;
     }
@@ -43,9 +49,10 @@ static int args_parse(struct args* args, int argc, char** argv) {
 
 static void args_free(struct args* args) {
     free(args->device);
+    free(args->infile);
 }
 
-int main(int argc, char** argv) {
+int load_flash_main(int argc, char** argv) {
     int result = 0;
 
     // Get arguments from the command line
@@ -102,9 +109,75 @@ int main(int argc, char** argv) {
         goto leave_handhelds;
     }
 
-    char page[MIUCHIZ_PAGE_SIZE] = { 0 };
-    // For whatever reason, reading from 0x200 makes it disconnect.
-    miuchiz_handheld_read_page(handheld, 0x200, page, sizeof(page));
+    FILE* fp = fopen(args.infile, "rb");
+    if (fp == NULL) {
+        printf("Unable to open %s for reading. [%d] %s\n", args.infile, errno, strerror(errno));
+        result = 1;
+        goto leave_file;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    size_t file_size = ftell(fp);
+
+    if (file_size != MIUCHIZ_PAGE_SIZE * MIUCHIZ_PAGE_COUNT) {
+        printf("Flash file must be 0x%X bytes.\n", MIUCHIZ_PAGE_SIZE * MIUCHIZ_PAGE_COUNT);
+        miuchiz_handheld_destroy_all(handhelds);
+        return 1;
+    }
+
+    struct Utimer timer;
+    miuchiz_utimer_start(&timer);
+
+    int success = 0;
+    for (int pagenum = 0; pagenum < MIUCHIZ_PAGE_COUNT; pagenum++) {
+        success = 0;
+        char page[MIUCHIZ_PAGE_SIZE] = { 0 };
+
+        miuchiz_utimer_end(&timer);
+        int seconds = miuchiz_utimer_elapsed(&timer) / 1000000;
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+        printf("\r[%02d:%02d] Writing page %d/%d (%d%%)", 
+               minutes,
+               seconds,
+               pagenum + 1,
+               MIUCHIZ_PAGE_COUNT,
+               (100 * (pagenum + 1)) / MIUCHIZ_PAGE_COUNT);
+        fflush(stdout);
+
+        for (int retry = 0; retry < 5; retry++) {
+            fseek(fp, pagenum * sizeof(page), SEEK_SET);
+            size_t read_result = fread(page, 1, sizeof(page), fp);
+            if (read_result != sizeof(page)) {
+                printf("\rReading of page %d from file failed. Retrying.\n", pagenum);
+                continue;
+            }
+            
+            int write_result = miuchiz_handheld_write_page(handheld, pagenum, page, sizeof(page));
+            if (write_result == -1) {
+                printf("\rWriting of page %d to device failed. Retrying.\n", pagenum);
+                continue;
+            }
+
+            success = 1;
+            break;
+        }
+
+        if (success == 0) {
+            printf("\rReading of page %d has failed too many times.\n", pagenum);
+            break;
+        }
+    }
+
+    if (success) {
+        printf("\n");
+    }
+    else {
+        result = 1;
+    }
+
+leave_file:
+    fclose(fp);
 
 leave_handhelds:
     miuchiz_handheld_destroy_all(handhelds);

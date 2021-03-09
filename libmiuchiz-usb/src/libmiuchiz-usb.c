@@ -1,4 +1,4 @@
-#include "libmiuchiz.h"
+#include "libmiuchiz-usb.h"
 #include "commands.h"
 #include "timer.h"
 

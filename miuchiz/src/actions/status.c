@@ -1,4 +1,4 @@
-#include "libmiuchiz.h"
+#include "libmiuchiz-usb.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,9 +14,9 @@ union miuchiz_u32_t {
     uint8_t b[4];
 };
 
-char* units[] = {"Cloe", "Yasmin", "Spike", "Dash", "Roc", "Creeper", "Inferno"};
+static char* units[] = {"Cloe", "Yasmin", "Spike", "Dash", "Roc", "Creeper", "Inferno"};
 
-int main(int argc, char** argv) {
+int status_main(int argc, char** argv) {
     struct Handheld** handhelds;
     int handheld_count = miuchiz_handheld_create_all(&handhelds);
 

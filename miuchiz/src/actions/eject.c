@@ -1,4 +1,4 @@
-#include "libmiuchiz.h"
+#include "libmiuchiz-usb.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -45,25 +45,7 @@ static void args_free(struct args* args) {
     free(args->device);
 }
 
-static int hcd_to_int(int hcd) {
-    int result = 0;
-    int place = 1;
-    int digit;
-    for (int i = 0; i < 4; i++) {
-        digit = hcd & 0xF;
-        result += digit * place;
-        place *= 10;
-
-        digit = (hcd & 0xF0) >> 4;
-        result += digit * place;
-        place *= 10;
-
-        hcd >>= 8;
-    }
-    return result;
-}
-
-int main(int argc, char** argv) {
+int eject_main(int argc, char** argv) {
     int result = 0;
 
     // Get arguments from the command line
@@ -121,13 +103,9 @@ int main(int argc, char** argv) {
     }
 
     char page[MIUCHIZ_PAGE_SIZE] = { 0 };
-    /* 0x9AA on page 0x1FF happens to be where creditz are stored.
-     * There's not really a cleaner way to do this without mapping
-     * out the entire page as a struct. */ 
-    miuchiz_handheld_read_page(handheld, 0x1FF, page, sizeof(page));
-    int creditz = hcd_to_int(*(unsigned int*)&page[0x9AA]);
-    printf("%d\n", creditz);
-    
+    // For whatever reason, reading from 0x200 makes it disconnect.
+    miuchiz_handheld_read_page(handheld, 0x200, page, sizeof(page));
+
 leave_handhelds:
     miuchiz_handheld_destroy_all(handhelds);
 

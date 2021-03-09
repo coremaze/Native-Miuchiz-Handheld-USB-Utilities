@@ -1,20 +1,16 @@
-#include "libmiuchiz.h"
-#include "timer.h"
+#include "libmiuchiz-usb.h"
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
 #include <getopt.h>
 #include <string.h>
 
 struct args {
     char* device;
-    char* outfile;
 };
 
 static void usage(char* program_name) {
-    fprintf(stderr, "Usage: %s [-d device] outfile\n", program_name);
+    fprintf(stderr, "Usage: %s [-d device]\n", program_name);
 }
 
 static int args_parse(struct args* args, int argc, char** argv) {
@@ -38,8 +34,6 @@ static int args_parse(struct args* args, int argc, char** argv) {
         }
     }
 
-    if (optind < argc) args->outfile = strdup(argv[optind++]); else return 1;
-
     if (optind < argc) {
         return 1;
     }
@@ -49,10 +43,27 @@ static int args_parse(struct args* args, int argc, char** argv) {
 
 static void args_free(struct args* args) {
     free(args->device);
-    free(args->outfile);
 }
 
-int main(int argc, char** argv) {
+static int hcd_to_int(int hcd) {
+    int result = 0;
+    int place = 1;
+    int digit;
+    for (int i = 0; i < 4; i++) {
+        digit = hcd & 0xF;
+        result += digit * place;
+        place *= 10;
+
+        digit = (hcd & 0xF0) >> 4;
+        result += digit * place;
+        place *= 10;
+
+        hcd >>= 8;
+    }
+    return result;
+}
+
+int read_creditz_main(int argc, char** argv) {
     int result = 0;
 
     // Get arguments from the command line
@@ -109,62 +120,14 @@ int main(int argc, char** argv) {
         goto leave_handhelds;
     }
 
-    FILE* fp = fopen(args.outfile, "wb");
-    if (fp == NULL) {
-        fprintf(stderr, "Unable to open %s for writing. [%d] %s\n", args.outfile, errno, strerror(errno));
-        result = 1;
-        goto leave_file;
-    }
-
-    struct Utimer timer;
-    miuchiz_utimer_start(&timer);
-
-    int success = 0;
-    for (int pagenum = 0; pagenum < MIUCHIZ_PAGE_COUNT; pagenum++) {
-        success = 0;
-        char page[MIUCHIZ_PAGE_SIZE] = { 0 };
-
-        miuchiz_utimer_end(&timer);
-        int seconds = miuchiz_utimer_elapsed(&timer) / 1000000;
-        int minutes = seconds / 60;
-        seconds = seconds % 60;
-        printf("\r[%02d:%02d] Reading page %d/%d (%d%%)", 
-               minutes,
-               seconds,
-               pagenum + 1,
-               MIUCHIZ_PAGE_COUNT,
-               (100 * (pagenum + 1)) / MIUCHIZ_PAGE_COUNT);
-        fflush(stdout);
-
-        for (int retry = 0; retry < 5; retry++) {
-            int read_result = miuchiz_handheld_read_page(handheld, pagenum, page, sizeof(page));
-            if (read_result == -1) {
-                printf("\rReading of page %d failed. Retrying.\n", pagenum);
-            }
-            else {
-                success = 1;
-                break;
-            }
-        }
-
-        if (success == 0) {
-            printf("\rReading of page %d has failed too many times.\n", pagenum);
-            break;
-        }
-
-        size_t write_result = fwrite(page, 1, sizeof(page), fp);
-    }
-
-    if (success) {
-        printf("\n");
-    }
-    else {
-        result = 1;
-    }
-
-leave_file:
-    fclose(fp);
-
+    char page[MIUCHIZ_PAGE_SIZE] = { 0 };
+    /* 0x9AA on page 0x1FF happens to be where creditz are stored.
+     * There's not really a cleaner way to do this without mapping
+     * out the entire page as a struct. */ 
+    miuchiz_handheld_read_page(handheld, 0x1FF, page, sizeof(page));
+    int creditz = hcd_to_int(*(unsigned int*)&page[0x9AA]);
+    printf("%d\n", creditz);
+    
 leave_handhelds:
     miuchiz_handheld_destroy_all(handhelds);
 

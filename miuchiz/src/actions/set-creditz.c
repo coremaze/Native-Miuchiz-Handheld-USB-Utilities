@@ -1,4 +1,4 @@
-#include "libmiuchiz.h"
+#include "libmiuchiz-usb.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -62,7 +62,7 @@ int int_to_hcd(int num) {
     return result;
 }
 
-int main(int argc, char** argv) {
+int set_creditz_main(int argc, char** argv) {
     int result = 0;
 
     // Get arguments from the command line
