@@ -1,0 +1,11 @@
+#!/bin/bash
+_miuchiz()
+{
+  if [ "${#COMP_WORDS[@]}" != "2" ]; then
+    return
+  fi
+
+  COMPREPLY=($(compgen -W "dump-flash eject load-flash read-creditz set-creditz status" "${COMP_WORDS[1]}"))
+}
+
+complete -F _miuchiz miuchiz

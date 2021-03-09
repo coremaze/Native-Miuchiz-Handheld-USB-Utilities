@@ -15,3 +15,4 @@ add_executable(${LOCAL_PROJECT_NAME} src/miuchiz.c
 
 target_link_libraries(${LOCAL_PROJECT_NAME} miuchiz-usb) 
 INSTALL(TARGETS ${LOCAL_PROJECT_NAME} DESTINATION bin)
+INSTALL(FILES completions/miuchiz DESTINATION share/bash-completion/completions)
