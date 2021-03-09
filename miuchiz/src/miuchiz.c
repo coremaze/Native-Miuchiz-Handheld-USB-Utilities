@@ -42,27 +42,34 @@ static void help(char* program_name) {
 }
 
 static int handle_opt(int argc, char** argv) {
+    int result = 0;
+    int old_opterr = opterr;
+    opterr = 0;
     int opt;
     int option_index;
     static struct option long_options[] = {
         {"help", no_argument, 0, 'h' },
-        {0,        0,                 0,  0 }
+        {0,      0,           0,  0 }
     };
 
-    while ((opt = getopt_long(argc, argv, "d:", (struct option*)&long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "h", (struct option*)&long_options, &option_index)) != -1) {
         switch (opt) {
             case 'h':
                 help(argv[0]);
-                return 1;
+                result = 1;
+                goto leave;
                 break;
             default:
-                usage(argv[0]);
-                return 1;
+                goto leave;
                 break;
         }
     }
 
-    return 0;
+leave:
+    optarg = NULL;
+    optind = 0;
+    opterr = old_opterr;
+    return result;
 }
 
 int main(int argc, char** argv) {
