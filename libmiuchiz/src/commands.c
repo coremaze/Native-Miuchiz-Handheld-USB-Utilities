@@ -1,17 +1,18 @@
 #include "commands.h"
 
 #if defined(unix) || defined(__unix__) || defined(__unix)
-#include <arpa/inet.h>
+    #include <arpa/inet.h>
 #elif defined(_WIN32)
-uint32_t htonl(uint32_t hostlong) {
-    uint32_t result = 0;
-    result = ((hostlong & 0x000000FF) << 24)
-           | ((hostlong & 0x0000FF00) << 8)  
-           | ((hostlong & 0x00FF0000) >> 8)  
-           | ((hostlong & 0xFF000000) >> 24);
-    return result;
-}
+    uint32_t htonl(uint32_t hostlong) {
+        uint32_t result = 0;
+        result = ((hostlong & 0x000000FF) << 24)
+               | ((hostlong & 0x0000FF00) << 8)  
+               | ((hostlong & 0x00FF0000) >> 8)  
+               | ((hostlong & 0xFF000000) >> 24);
+        return result;
+    }
 #endif
+
 #include <stdlib.h>
 
 

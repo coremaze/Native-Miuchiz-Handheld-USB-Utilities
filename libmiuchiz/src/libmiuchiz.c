@@ -10,9 +10,9 @@
 #include <unistd.h>
 
 #if defined(unix) || defined(__unix__) || defined(__unix)
-#include <glob.h>
+    #include <glob.h>
 #elif defined(_WIN32)
-#include <windows.h>
+    #include <windows.h>
 #endif
 
 #define LOG_ERRORS 0
@@ -30,29 +30,28 @@ static ssize_t _miuchiz_handheld_write(struct Handheld* handheld, const void *bu
     miuchiz_utimer_start(&timer);
 
     #if defined(unix) || defined(__unix__) || defined(__unix)
-    result = write(handheld->fd, buf, n);
+        result = write(handheld->fd, buf, n);
     #elif defined(_WIN32)
-    DWORD dresult = 0;
-    if (WriteFile(handheld->fd, buf, n, &dresult, NULL) == 0) {
-        result = -1;
-    }
-    else {
-        result = dresult;
-    }
+        DWORD dresult = 0;
+        if (WriteFile(handheld->fd, buf, n, &dresult, NULL) == 0) {
+            result = -1;
+        }
+        else {
+            result = dresult;
+        }
     #endif
 
     miuchiz_utimer_end(&timer);
-
     uint64_t usecs_to_sleep = miuchiz_utimer_elapsed(&timer) / 3;
 
     #if defined(unix) || defined(__unix__) || defined(__unix)
-    usleep(usecs_to_sleep);
+        usleep(usecs_to_sleep);
     #elif defined(_WIN32)
-    int msecs_to_sleep = miuchiz_round_size_up(usecs_to_sleep, 1000) / 1000;
-    if (msecs_to_sleep == 0) {
-        msecs_to_sleep = 1;
-    }
-    Sleep(msecs_to_sleep);
+        int msecs_to_sleep = miuchiz_round_size_up(usecs_to_sleep, 1000) / 1000;
+        if (msecs_to_sleep == 0) {
+            msecs_to_sleep = 1;
+        }
+        Sleep(msecs_to_sleep);
     #endif
     
     return result;
@@ -61,32 +60,32 @@ static ssize_t _miuchiz_handheld_write(struct Handheld* handheld, const void *bu
 static ssize_t _miuchiz_handheld_read(struct Handheld* handheld, void* buf, size_t nbytes) {
     ssize_t result = 0;
     #if defined(unix) || defined(__unix__) || defined(__unix)
-    result = read(handheld->fd, buf, nbytes);
+        result = read(handheld->fd, buf, nbytes);
     #elif defined(_WIN32)
-    DWORD dresult = 0;
-    if (ReadFile(handheld->fd, buf, nbytes, &dresult, NULL) == 0) {
-        result = -1;
-    }
-    else {
-        result = dresult;
-    }
+        DWORD dresult = 0;
+        if (ReadFile(handheld->fd, buf, nbytes, &dresult, NULL) == 0) {
+            result = -1;
+        }
+        else {
+            result = dresult;
+        }
     #endif
     return result;
 }
 
 static off_t _miuchiz_handheld_seek(struct Handheld* handheld, off_t offset) {
     #if defined(unix) || defined(__unix__) || defined(__unix)
-    return lseek(handheld->fd, offset, SEEK_SET);
+        return lseek(handheld->fd, offset, SEEK_SET);
     #elif defined(_WIN32)
-    return SetFilePointer(handheld->fd, offset, 0, FILE_BEGIN);
+        return SetFilePointer(handheld->fd, offset, 0, FILE_BEGIN);
     #endif
 }
 
 static void* _miuchiz_dma_alloc(size_t size) {
     #if defined(unix) || defined(__unix__) || defined(__unix)
-    return aligned_alloc(miuchiz_page_alignment(), size);
+        return aligned_alloc(miuchiz_page_alignment(), size);
     #elif defined(_WIN32)
-    return malloc(size);
+        return malloc(size);
     #endif
 }
 
@@ -115,15 +114,15 @@ void miuchiz_handheld_destroy(struct Handheld* handheld) {
 
 fp_t miuchiz_handheld_open(struct Handheld* handheld) {
     #if defined(unix) || defined(__unix__) || defined(__unix)
-    handheld->fd = open(handheld->device, O_RDWR | __O_DIRECT | O_NONBLOCK | O_SYNC );
+        handheld->fd = open(handheld->device, O_RDWR | __O_DIRECT | O_NONBLOCK | O_SYNC );
     #elif defined(_WIN32)
-    handheld->fd = CreateFileA(handheld->device,
-                               GENERIC_READ | GENERIC_WRITE,
-                               FILE_SHARE_READ | FILE_SHARE_WRITE,
-                               NULL,
-                               OPEN_EXISTING,
-                               FILE_FLAG_NO_BUFFERING | FILE_ATTRIBUTE_NORMAL,
-                               NULL);
+        handheld->fd = CreateFileA(handheld->device,
+                                   GENERIC_READ | GENERIC_WRITE,
+                                   FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                   NULL,
+                                   OPEN_EXISTING,
+                                   FILE_FLAG_NO_BUFFERING | FILE_ATTRIBUTE_NORMAL,
+                                   NULL);
     #endif
     return handheld->fd;
 }
@@ -131,9 +130,9 @@ fp_t miuchiz_handheld_open(struct Handheld* handheld) {
 void miuchiz_handheld_close(struct Handheld* handheld) {
     if (handheld->fd > 0) {
         #if defined(unix) || defined(__unix__) || defined(__unix)
-        close(handheld->fd);
+            close(handheld->fd);
         #elif defined(_WIN32)
-        CloseHandle(handheld->fd);
+            CloseHandle(handheld->fd);
         #endif 
     } 
 }
@@ -146,16 +145,48 @@ int miuchiz_handheld_create_all(struct Handheld*** handhelds) {
     // This is to ensure that there is at least one NULL at the end.
 
     #if defined(unix) || defined(__unix__) || defined(__unix)
-    // Get all SCSI disks on the system
-    glob_t globbuf;
-    if (!glob("/dev/sd*", 0, NULL, &globbuf)) {
-        size_t handhelds_array_size = (globbuf.gl_pathc + 1) * sizeof(struct Handheld*);
+        // Get all SCSI disks on the system
+        glob_t globbuf;
+        if (!glob("/dev/sd*", 0, NULL, &globbuf)) {
+            size_t handhelds_array_size = (globbuf.gl_pathc + 1) * sizeof(struct Handheld*);
+            *handhelds = malloc(handhelds_array_size);
+            memset(*handhelds, 0, handhelds_array_size);
+
+            // Find all the disks that are handhelds
+            for (int i = 0;  i < globbuf.gl_pathc; i++) {
+                struct Handheld* handheld_candidate = miuchiz_handheld_create(globbuf.gl_pathv[i]);
+                if (miuchiz_handheld_is_handheld(handheld_candidate)) {
+                    (*handhelds)[handhelds_count++] = handheld_candidate;
+                }
+                else {
+                    miuchiz_handheld_destroy(handheld_candidate);
+                }
+            }
+        }
+        globfree(&globbuf);
+    #elif defined(_WIN32)
+        // Get all the drive letters mounted
+        unsigned int mask = GetLogicalDrives();
+        char letters[256] = { };
+        int letters_count = 0;
+        for (int i = 0; mask; i++){
+            if (mask & 1){
+                char letter = 'A' + i;
+                letters[letters_count++] = letter;
+            }
+            mask = mask >> 1;
+        }
+
+        // Find all the drive letters that are handhelds
+        size_t handhelds_array_size = (letters_count + 1) * sizeof(struct Handheld*);
         *handhelds = malloc(handhelds_array_size);
         memset(*handhelds, 0, handhelds_array_size);
 
-        // Find all the disks that are handhelds
-        for (int i = 0;  i < globbuf.gl_pathc; i++) {
-            struct Handheld* handheld_candidate = miuchiz_handheld_create(globbuf.gl_pathv[i]);
+        for (int i = 0; i<letters_count; i++){
+            char drive[16] = { 0 };
+
+            sprintf(drive, "\\\\.\\%c:", letters[i]);
+            struct Handheld* handheld_candidate = miuchiz_handheld_create(drive);
             if (miuchiz_handheld_is_handheld(handheld_candidate)) {
                 (*handhelds)[handhelds_count++] = handheld_candidate;
             }
@@ -163,38 +194,6 @@ int miuchiz_handheld_create_all(struct Handheld*** handhelds) {
                 miuchiz_handheld_destroy(handheld_candidate);
             }
         }
-    }
-    globfree(&globbuf);
-    #elif defined(_WIN32)
-    // Get all the drive letters mounted
-    unsigned int mask = GetLogicalDrives();
-    char letters[256] = { };
-    int letters_count = 0;
-    for (int i = 0; mask; i++){
-        if (mask & 1){
-            char letter = 'A' + i;
-            letters[letters_count++] = letter;
-        }
-        mask = mask >> 1;
-    }
-
-    // Find all the drive letters that are handhelds
-    size_t handhelds_array_size = (letters_count + 1) * sizeof(struct Handheld*);
-    *handhelds = malloc(handhelds_array_size);
-    memset(*handhelds, 0, handhelds_array_size);
-
-    for (int i = 0; i<letters_count; i++){
-        char drive[16] = { 0 };
-
-        sprintf(drive, "\\\\.\\%c:", letters[i]);
-        struct Handheld* handheld_candidate = miuchiz_handheld_create(drive);
-        if (miuchiz_handheld_is_handheld(handheld_candidate)) {
-            (*handhelds)[handhelds_count++] = handheld_candidate;
-        }
-        else {
-            miuchiz_handheld_destroy(handheld_candidate);
-        }
-    }
     #endif 
 
     return handhelds_count;
@@ -403,12 +402,12 @@ long miuchiz_page_alignment() {
     static long page_size = 0;
     if (page_size == 0) {
         #if defined(unix) || defined(__unix__) || defined(__unix)
-        page_size = sysconf(_SC_PAGESIZE);
-        if (page_size < MIUCHIZ_SECTOR_SIZE) {
-            page_size = MIUCHIZ_SECTOR_SIZE;
-        }
+            page_size = sysconf(_SC_PAGESIZE);
+            if (page_size < MIUCHIZ_SECTOR_SIZE) {
+                page_size = MIUCHIZ_SECTOR_SIZE;
+            }
         #elif defined(_WIN32)
-        page_size = 4096;
+            page_size = 4096;
         #endif
     }
     return page_size;

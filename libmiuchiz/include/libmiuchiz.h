@@ -3,10 +3,10 @@
 #include <unistd.h>
 
 #if defined(unix) || defined(__unix__) || defined(__unix)
-#define fp_t int
+    typedef int fp_t;
 #elif defined(_WIN32)
-#include "fileapi.h"
-#define fp_t HANDLE
+    #include "fileapi.h"
+    typedef HANDLE fp_t;
 #endif
 
 #define MIUCHIZ_SECTOR_SIZE (512)
