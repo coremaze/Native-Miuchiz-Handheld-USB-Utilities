@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
     // Find the handheld
     struct Handheld* handheld = NULL;
     for (int i = 0; i < handheld_count; i++) {
-        if (specified_device || (specified_device && strcmp(specified_device, handhelds[i]->device) == 0)) {
+        if (!specified_device || (specified_device && strcmp(specified_device, handhelds[i]->device) == 0)) {
             handheld = handhelds[i];
             break;
         }
