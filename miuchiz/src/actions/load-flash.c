@@ -11,6 +11,7 @@
 struct args {
     char* device;
     char* infile;
+    int check_changes;
 };
 
 static void usage(char* program_name) {
@@ -21,16 +22,20 @@ static int args_parse(struct args* args, int argc, char** argv) {
     int opt;
     int option_index;
     static struct option long_options[] = {
-        {"device", required_argument, 0, 'd' },
-        {0,        0,                 0,  0 }
+        {"device",        required_argument, 0, 'd' },
+        {"check-changes", no_argument,       0, 'c'},
+        {0,               0,                 0,  0 }
     };
 
     memset(args, 0, sizeof(*args));
 
-    while ((opt = getopt_long(argc, argv, "d:", (struct option*)&long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "d:c", (struct option*)&long_options, &option_index)) != -1) {
         switch (opt) {
             case 'd':
                 args->device = strdup(optarg);
+                break;
+            case 'c':
+                args->check_changes = 1;
                 break;
             default:
                 return 1;
@@ -153,10 +158,30 @@ int load_flash_main(int argc, char** argv) {
                 continue;
             }
             
-            int write_result = miuchiz_handheld_write_page(handheld, pagenum, page, sizeof(page));
-            if (write_result == -1) {
-                printf("\rWriting of page %d to device failed. Retrying.\n", pagenum);
-                continue;
+            /* If check-changes was specified, read the current page from the device.
+             * If the page already on the device is already identical, then consider this 
+             * page successfully written. The read involved here is much faster than 
+             * writing, so this is normally faster if there are even a few identical pages. */
+
+            if (args.check_changes) {
+                char device_page[MIUCHIZ_PAGE_SIZE] = { 0 };
+                int device_read_result = miuchiz_handheld_read_page(handheld, pagenum, device_page, sizeof(device_page));
+                if (device_read_result == -1) {
+                    printf("\rReading from page %d of device failed. Retrying.\n", pagenum);
+                    continue;
+                }
+                if (memcmp(device_page, page, MIUCHIZ_PAGE_SIZE) == 0) {
+                    success = 1;
+                }
+            }
+
+            // This page may have already been considered successfully written due to check-changes
+            if (!success) {
+                int write_result = miuchiz_handheld_write_page(handheld, pagenum, page, sizeof(page));
+                if (write_result == -1) {
+                    printf("\rWriting of page %d to device failed. Retrying.\n", pagenum);
+                    continue;
+                }
             }
 
             success = 1;
