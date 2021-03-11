@@ -310,16 +310,14 @@ int miuchiz_handheld_read_page(struct Handheld* handheld, int page, void* buf, s
 
     // Write initiator to command interface
     {
-        struct SCSIWriteFilemarksCommand* cmd = miuchiz_scsi_write_filemarks_command_create();
-        miuchiz_handheld_send_scsi(handheld, cmd, sizeof(*cmd));
-        miuchiz_scsi_write_filemarks_command_destroy(cmd);
+        struct SCSIWriteFilemarksCommand cmd = miuchiz_scsi_write_filemarks_command();
+        miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
     }
 
     // Tell command interface we want to read from this page
     {
-        struct SCSIReadCommand* cmd = miuchiz_scsi_read_command_create(page);
-        miuchiz_handheld_send_scsi(handheld, cmd, sizeof(*cmd));
-        miuchiz_scsi_read_command_destroy(cmd);
+        struct SCSIReadCommand cmd = miuchiz_scsi_read_command(page);
+        miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
     }
 
     // Read response data from device's data output interface
@@ -335,9 +333,8 @@ int miuchiz_handheld_read_page(struct Handheld* handheld, int page, void* buf, s
 
     // Send terminator to command interface
     {
-        struct SCSIReadReverseCommand* cmd = miuchiz_scsi_read_reverse_command_create();
-        miuchiz_handheld_send_scsi(handheld, cmd, sizeof(*cmd));
-        miuchiz_scsi_read_reverse_command_destroy(cmd);
+        struct SCSIReadReverseCommand cmd = miuchiz_scsi_read_reverse_command();
+        miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
     }
 
     return read_result;
@@ -352,16 +349,14 @@ int miuchiz_handheld_write_page(struct Handheld* handheld, int page, const void*
 
     // Write initiator to command interface
     {
-        struct SCSIWriteFilemarksCommand* cmd = miuchiz_scsi_write_filemarks_command_create();
-        miuchiz_handheld_send_scsi(handheld, cmd, sizeof(*cmd));
-        miuchiz_scsi_write_filemarks_command_destroy(cmd);
+        struct SCSIWriteFilemarksCommand cmd = miuchiz_scsi_write_filemarks_command();
+        miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
     }
 
     // Tell command interface we want to write to this page
     {
-        struct SCSIWriteCommand* cmd = miuchiz_scsi_write_command_create(page, nbuf);
-        miuchiz_handheld_send_scsi(handheld, cmd, sizeof(*cmd));
-        miuchiz_scsi_write_command_destroy(cmd);
+        struct SCSIWriteCommand cmd = miuchiz_scsi_write_command(page, nbuf);
+        miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
     }
 
     // Put our data into the data input interface
@@ -371,9 +366,8 @@ int miuchiz_handheld_write_page(struct Handheld* handheld, int page, const void*
 
     // Send terminator to command interface
     {
-        struct SCSIReadReverseCommand* cmd = miuchiz_scsi_read_reverse_command_create();
-        miuchiz_handheld_send_scsi(handheld, cmd, sizeof(*cmd));
-        miuchiz_scsi_read_reverse_command_destroy(cmd);
+        struct SCSIReadReverseCommand cmd = miuchiz_scsi_read_reverse_command();
+        miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
     }
 
     return write_result;

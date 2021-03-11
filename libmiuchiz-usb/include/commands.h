@@ -21,16 +21,9 @@ struct __attribute__ ((packed)) SCSIWriteFilemarksCommand {
     char opcode;
 };
 
-struct SCSIReadCommand* miuchiz_scsi_read_command_create(uint32_t source_page);
-void miuchiz_scsi_read_command_destroy(struct SCSIReadCommand* cmd);
-
-struct SCSIWriteCommand* miuchiz_scsi_write_command_create(uint32_t destination_page, uint32_t payload_size);
-void miuchiz_scsi_write_command_destroy(struct SCSIWriteCommand* cmd);
-
-struct SCSIReadReverseCommand* miuchiz_scsi_read_reverse_command_create();
-void miuchiz_scsi_read_reverse_command_destroy(struct SCSIReadReverseCommand* cmd);
-
-struct SCSIWriteFilemarksCommand* miuchiz_scsi_write_filemarks_command_create();
-void miuchiz_scsi_write_filemarks_command_destroy(struct SCSIWriteFilemarksCommand* cmd);
+struct SCSIReadCommand miuchiz_scsi_read_command(uint32_t source_page);
+struct SCSIWriteCommand miuchiz_scsi_write_command(uint32_t destination_page, uint32_t payload_size);
+struct SCSIReadReverseCommand miuchiz_scsi_read_reverse_command();
+struct SCSIWriteFilemarksCommand miuchiz_scsi_write_filemarks_command();
 
 #endif
