@@ -112,7 +112,12 @@ int main(int argc, char** argv) {
                 new_argv[i - 1] = argv[i];
             }
 
-            return action->function(new_argc, new_argv);
+            int result = action->function(new_argc, new_argv);
+            
+            free(new_argv[0]);
+            free(new_argv); 
+
+            return result;
         }
     }
 
