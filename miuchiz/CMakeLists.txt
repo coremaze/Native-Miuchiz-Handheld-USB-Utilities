@@ -13,6 +13,11 @@ add_executable(${LOCAL_PROJECT_NAME} src/miuchiz.c
                                      src/actions/set-creditz.c
                                      src/actions/status.c)
 
+if (WIN32)
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/windows-assistance/console.bat
+         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+ENDIF()
+
 target_link_libraries(${LOCAL_PROJECT_NAME} miuchiz-usb) 
 INSTALL(TARGETS ${LOCAL_PROJECT_NAME} DESTINATION bin)
 INSTALL(FILES completions/miuchiz DESTINATION share/bash-completion/completions)
