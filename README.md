@@ -1,6 +1,12 @@
 # Miuchiz Handheld USB Utilities
 
 ## Compiling
+Dependencies:
+* `git` (if you choose to clone this repo)
+* `cmake`
+* `make`
+* `gcc` (or the appropriate compiler for your target system)
+  
 To build:
 ```
 mkdir build
