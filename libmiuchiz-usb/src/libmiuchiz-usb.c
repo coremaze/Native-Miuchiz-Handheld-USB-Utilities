@@ -30,14 +30,18 @@ static ssize_t _miuchiz_handheld_write(struct Handheld* handheld, const void *bu
     miuchiz_utimer_start(&timer);
 
     #if defined(unix) || defined(__unix__) || defined(__unix)
-        result = write(handheld->fd, buf, n);
-    #elif defined(_WIN32)
-        DWORD dresult = 0;
-        if (WriteFile(handheld->fd, buf, n, &dresult, NULL) == 0) {
-            result = -1;
+        if (handheld->fd != -1) {
+            result = write(handheld->fd, buf, n);
         }
-        else {
-            result = dresult;
+    #elif defined(_WIN32)
+        if (handheld->fd != INVALID_HANDLE_VALUE) {
+            DWORD dresult = 0;
+            if (WriteFile(handheld->fd, buf, n, &dresult, NULL) == 0) {
+                result = -1;
+            }
+            else {
+                result = dresult;
+            }
         }
     #endif
 
@@ -58,27 +62,37 @@ static ssize_t _miuchiz_handheld_write(struct Handheld* handheld, const void *bu
 }
 
 static ssize_t _miuchiz_handheld_read(struct Handheld* handheld, void* buf, size_t nbytes) {
-    ssize_t result = 0;
+    ssize_t result = -1;
     #if defined(unix) || defined(__unix__) || defined(__unix)
-        result = read(handheld->fd, buf, nbytes);
+        if (handheld->fd != -1) {
+            result = read(handheld->fd, buf, nbytes);
+        } 
     #elif defined(_WIN32)
-        DWORD dresult = 0;
-        if (ReadFile(handheld->fd, buf, nbytes, &dresult, NULL) == 0) {
-            result = -1;
-        }
-        else {
-            result = dresult;
+        if (handheld->fd != INVALID_HANDLE_VALUE) {
+            DWORD dresult = 0;
+            if (ReadFile(handheld->fd, buf, nbytes, &dresult, NULL) == 0) {
+                result = -1;
+            }
+            else {
+                result = dresult;
+            }
         }
     #endif
     return result;
 }
 
 static off_t _miuchiz_handheld_seek(struct Handheld* handheld, off_t offset) {
+    off_t result = -1;
     #if defined(unix) || defined(__unix__) || defined(__unix)
-        return lseek(handheld->fd, offset, SEEK_SET);
+        if (handheld->fd != -1) {
+            result = lseek(handheld->fd, offset, SEEK_SET);
+        }
     #elif defined(_WIN32)
-        return SetFilePointer(handheld->fd, offset, 0, FILE_BEGIN);
+        if (handheld->fd != INVALID_HANDLE_VALUE) {
+            result = SetFilePointer(handheld->fd, offset, 0, FILE_BEGIN);
+        }
     #endif
+    return result;
 }
 
 static void* _miuchiz_dma_alloc(size_t size) {
