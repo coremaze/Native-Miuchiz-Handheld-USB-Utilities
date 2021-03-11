@@ -26,7 +26,7 @@ int status_main(int argc, char** argv) {
     }
 
     // This is put into stderr to make the result easier to process with shell commands
-    fprintf(stderr, "%d handhelds are connected.\n", handheld_count);
+    fprintf(stderr, "Handhelds connected: %d\n", handheld_count);
 
     for (int i = 0; i < handheld_count; i++) {
         struct Handheld* handheld = handhelds[i];
