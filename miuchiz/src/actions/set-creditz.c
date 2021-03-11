@@ -47,6 +47,7 @@ static int args_parse(struct args* args, int argc, char** argv) {
 
 static void args_free(struct args* args) {
     free(args->device);
+    free(args->creditz);
 }
 
 int int_to_hcd(int num) {
