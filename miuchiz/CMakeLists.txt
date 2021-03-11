@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0.0)
 set(LOCAL_PROJECT_NAME miuchiz)
-project(${LOCAL_PROJECT_NAME} VERSION 0.1.0)
+project(${LOCAL_PROJECT_NAME} VERSION 1.0)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DMIUCHIZ_UTILS_VERSION=\"\\\"${PROJECT_VERSION}\"\\\"")
 
 include_directories(../libmiuchiz-usb/include
                     ./include)

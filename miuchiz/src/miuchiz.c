@@ -41,6 +41,10 @@ static void help(char* program_name) {
     }
 }
 
+static void version() {
+    printf("%s\n", MIUCHIZ_UTILS_VERSION);
+}
+
 static int handle_opt(int argc, char** argv) {
     int result = 0;
     int old_opterr = opterr;
@@ -48,14 +52,20 @@ static int handle_opt(int argc, char** argv) {
     int opt;
     int option_index;
     static struct option long_options[] = {
-        {"help", no_argument, 0, 'h' },
-        {0,      0,           0,  0 }
+        {"help",    no_argument, 0, 'h' },
+        {"version", no_argument, 0, 'v' },
+        {0,         0,           0,  0  }
     };
 
-    while ((opt = getopt_long(argc, argv, "h", (struct option*)&long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "hv", (struct option*)&long_options, &option_index)) != -1) {
         switch (opt) {
             case 'h':
                 help(argv[0]);
+                result = 1;
+                goto leave;
+                break;
+            case 'v':
+                version();
                 result = 1;
                 goto leave;
                 break;
