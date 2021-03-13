@@ -265,7 +265,7 @@ int load_flash_process(struct setup_info* info) {
 
     if (info->args.mirrorfile) {
         /* If the transfer was successful, the mirror file needs to be updated
-            * if one was provided. */
+         * if one was provided. */
         if (info->mirrorfile_fp) {
             fclose(info->mirrorfile_fp);
         }
