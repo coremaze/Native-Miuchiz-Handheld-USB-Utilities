@@ -62,6 +62,8 @@ Writes a flash dump from a file to a Miuchiz device.
 
 `-c` or `--check-changes` may be specified in order to verify that pages on the device are different than the pages in the file before writing to the device. This will usually improve speed.
 
+`-m` or `--mirror` may be specified with an argument in order to supply a file which will be treated as a cached copy of the handheld. This will maintain a local copy of the firmware in order to identify which pages need updated. This is the fastest option for those developing firmware to run on the Miuchiz device.
+
 ## Read creditz
 
 ```
