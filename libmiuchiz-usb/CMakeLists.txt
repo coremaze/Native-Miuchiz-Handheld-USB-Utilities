@@ -4,3 +4,4 @@ include_directories(include)
 add_library(miuchiz-usb src/libmiuchiz-usb.c
                         src/commands.c
                         src/timer.c)
+set_property(TARGET miuchiz-usb PROPERTY C_STANDARD 11)
