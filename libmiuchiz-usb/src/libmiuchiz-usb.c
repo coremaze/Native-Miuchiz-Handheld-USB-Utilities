@@ -48,7 +48,7 @@ static ssize_t _miuchiz_handheld_write(struct Handheld* handheld, const void *bu
     miuchiz_utimer_end(&timer);
 
     #if defined(unix) || defined(__unix__) || defined(__unix)
-        uint64_t usecs_to_sleep = miuchiz_utimer_elapsed(&timer) * 0.3;
+        uint64_t usecs_to_sleep = miuchiz_utimer_elapsed(&timer) / 3;
         usleep(usecs_to_sleep);
     #elif defined(_WIN32)
         // For some reason, Windows 10 needs a lot more time
