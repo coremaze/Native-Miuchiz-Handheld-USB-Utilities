@@ -34,6 +34,22 @@ Dumps the entire flash of a Miuchiz device to a file.
 
 `-d` or `--device` may be specified with an argument to distinguish between multiple connected Miuchiz devices.
 
+### Dump OTP
+
+```
+Usage: miuchiz dump-otp <output file>
+Example: miuchiz dump-otp otp.dat
+Example: miuchiz dump-otp -d/dev/sdb otp.dat
+Example: miuchiz dump-otp -d\\.\E: otp.dat
+```
+
+Dumps the **O**ne **T**ime **P**rogrammable (OTP) ROM from the device.
+
+`-d` or `--device` may be specified with an argument to distinguish between multiple connected Miuchiz devices.
+
+`-c` or `--checksum` may be specified in order to perform a checksum on the result. The checksum is performed in the same manner the device's test program performs it.
+
+
 ## Eject
 
 ```
