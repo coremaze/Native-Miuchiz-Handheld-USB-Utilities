@@ -9,6 +9,7 @@ include_directories(../libmiuchiz-usb/include
 
 add_executable(${LOCAL_PROJECT_NAME} src/miuchiz.c
                                      src/actions/dump-flash.c
+                                     src/actions/dump-otp.c
                                      src/actions/eject.c
                                      src/actions/load-flash.c
                                      src/actions/read-creditz.c

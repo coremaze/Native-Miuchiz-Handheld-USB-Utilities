@@ -1,4 +1,5 @@
 #include "actions/dump-flash.h"
+#include "actions/dump-otp.h"
 #include "actions/eject.h"
 #include "actions/load-flash.h"
 #include "actions/read-creditz.h"
@@ -18,6 +19,7 @@ struct action {
 
 static struct action actions[] = {
     {"dump-flash", dump_flash_main},
+    {"dump-otp", dump_otp_main},
     {"eject", eject_main},
     {"load-flash", load_flash_main},
     {"read-creditz", read_creditz_main},
