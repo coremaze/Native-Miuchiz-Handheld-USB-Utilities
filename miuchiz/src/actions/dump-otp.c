@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <errno.h>
 #include <string.h>
+#include <stdint.h>
 
 struct args {
     char* device;
@@ -57,9 +58,9 @@ static void args_free(struct args* args) {
     free(args->outfile);
 }
 
-static u_int64_t checksum(void* buf, size_t n) {
-    u_int8_t* buffer = (u_int8_t*)buf;
-    u_int64_t result = 0;
+static uint64_t checksum(void* buf, size_t n) {
+    uint8_t* buffer = (uint8_t*)buf;
+    uint64_t result = 0;
     for (int i = 0; i < n; i++) {
         result += buffer[i];
     }
@@ -153,7 +154,7 @@ int dump_otp_main(int argc, char** argv) {
     fwrite(otp, 1, OTP_SIZE, fp);
 
     if (args.do_checksum) {
-        printf("Checksum: %lX\n", checksum(otp, OTP_SIZE));
+        printf("Checksum: %llX\n", checksum(otp, OTP_SIZE));
     }
 
 leave:
