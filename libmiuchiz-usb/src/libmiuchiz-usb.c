@@ -232,7 +232,7 @@ int miuchiz_handheld_is_handheld(struct Handheld* handheld) {
         is_handheld = 0;
     }
     else {
-        is_handheld = strncmp(&data[43], "SITRONIXTM", 10) == 0;
+        is_handheld = strcmp(&data[43], "SITRONIXTM") == 0;
     }
 
     free(data);
