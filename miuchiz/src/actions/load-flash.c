@@ -252,7 +252,7 @@ int load_flash_process(struct setup_info* info) {
         }
 
         if (page_write_success == 0) {
-            printf("\rReading of page %d has failed too many times.\n", pagenum);
+            printf("\rWriting of page %d has failed too many times.\n", pagenum);
             break;
         }
     }
