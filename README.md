@@ -66,7 +66,7 @@ Causes the Miuchiz device to disconnect from the computer.
 ## Load flash
 
 ```
-Usage: miuchiz load-flash <output file>
+Usage: miuchiz load-flash <input file>
 Example: miuchiz load-flash flash.dat
 Example: miuchiz load-flash -d/dev/sdb flash.dat
 Example: miuchiz load-flash -d\\.\E: flash.dat
