@@ -28,11 +28,11 @@ static struct action actions[] = {
     {NULL, NULL}
 };
 
-static void usage(char* program_name) {
+static void usage(const char* program_name) {
     fprintf(stderr, "Usage: %s action [...]\n", program_name);
 }
 
-static void help(char* program_name) {
+static void help(const char* program_name) {
     printf("%s - Miuchiz Handheld USB Utilities\n", program_name);
     printf("Available actions:\n");
 
@@ -47,7 +47,7 @@ static void version() {
     printf("%s\n", MIUCHIZ_UTILS_VERSION);
 }
 
-static int handle_opt(int argc, char** argv) {
+static int handle_opt(int argc, char** argv, const char* program_name) {
     int result = 0;
     int old_opterr = opterr;
     opterr = 0;
@@ -62,7 +62,7 @@ static int handle_opt(int argc, char** argv) {
     while ((opt = getopt_long(argc, argv, "hv", (struct option*)&long_options, &option_index)) != -1) {
         switch (opt) {
             case 'h':
-                help(argv[0]);
+                help(program_name);
                 result = 1;
                 goto leave;
                 break;
@@ -85,13 +85,31 @@ leave:
 }
 
 int main(int argc, char** argv) {
-    if (handle_opt(argc, argv)) {
-        return 1;
+    int result = 0;
+
+    /* This exists to make it easier to work with snaps.
+     * Running this program with snap will change what argv[0] is,
+     * so we are allowing the snap installation to just specify its own name.
+     */
+    char* program_name;
+    const char* env_program_name = getenv("MIUCHIZ_UTILS_NAME");
+
+    if (env_program_name == NULL) {
+        program_name = strdup(argv[0]);
+    }
+    else {
+        program_name = strdup(env_program_name);
+    }
+
+    if (handle_opt(argc, argv, program_name)) {
+        result = 1;
+        goto leave;
     }
 
     if (argc < 2) {
-        usage(argv[0]);
-        return 1;
+        usage(program_name);
+        result = 1;
+        goto leave;
     } 
 
     char* action_arg = argv[1];
@@ -114,16 +132,18 @@ int main(int argc, char** argv) {
                 new_argv[i - 1] = argv[i];
             }
 
-            int result = action->function(new_argc, new_argv);
+            result = action->function(new_argc, new_argv);
             
             free(new_argv[0]);
             free(new_argv); 
 
-            return result;
+            goto leave;
         }
     }
 
     fprintf(stderr, "Invalid action: %s\n", action_arg);
 
-    return 1;
+leave:
+    free(program_name);
+    return result;
 }
