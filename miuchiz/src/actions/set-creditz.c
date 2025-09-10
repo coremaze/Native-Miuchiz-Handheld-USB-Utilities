@@ -77,8 +77,9 @@ int set_creditz_main(int argc, char** argv) {
 
     int creditz = 0;
     // Ensure creditz is a number
-    for (int i = 0; i < strlen(args.creditz); i++) {
-        if (!isdigit(args.creditz[i])) {
+    size_t creditz_len = strlen(args.creditz);
+    for (size_t i = 0; i < creditz_len; i++) {
+        if (!isdigit((unsigned char)args.creditz[i])) {
             fprintf(stderr, "Invalid creditz amount: %s\n", args.creditz);
             result = 1;
             goto leave_args;
