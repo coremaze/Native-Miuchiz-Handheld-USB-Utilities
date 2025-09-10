@@ -355,13 +355,29 @@ int miuchiz_handheld_read_page(struct Handheld* handheld, int page, void* buf, s
 
     // Read response data from device's data output interface
     {
-        struct __attribute__ ((packed)) {
-            int32_t length_be; char data[nbuf];
-        } page_data;
+        // The response will look like this:
+        // 4 bytes length, big endian
+        // length of data, but we fill with the size requested
 
-        read_result = miuchiz_handheld_read_sector(handheld, MIUCHIZ_SECTOR_DATA_READ, &page_data, sizeof(page_data));
-
-        memcpy(buf, page_data.data, nbuf);
+        size_t page_data_size = sizeof(int32_t) + nbuf;
+        unsigned char* page_data = malloc(page_data_size);
+        if (page_data == NULL) {
+            if (LOG_ERRORS) {
+                printf("malloc failed in read_page.\n");
+            }
+            read_result = -1;
+        }
+        else {
+            read_result = miuchiz_handheld_read_sector(handheld, MIUCHIZ_SECTOR_DATA_READ, page_data, page_data_size);
+            if (read_result >= 0) {
+                // Skip the length bytes
+                memcpy(buf, page_data + sizeof(int32_t), nbuf);
+            }
+            else if (LOG_ERRORS) {
+                printf("miuchiz_handheld_read_sector failed in read_page. [%d] %s\n", errno, strerror(errno));
+            }
+            free(page_data);
+        }
     }
 
     // Send terminator to command interface
