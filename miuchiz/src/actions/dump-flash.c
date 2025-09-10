@@ -163,7 +163,9 @@ int dump_flash_main(int argc, char** argv) {
     }
 
 leave_file:
-    fclose(fp);
+    if (fp) {
+        fclose(fp);
+    }
 
 leave_handhelds:
     miuchiz_handheld_destroy_all(handhelds);
