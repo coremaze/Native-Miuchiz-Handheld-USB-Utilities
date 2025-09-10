@@ -175,7 +175,8 @@ int miuchiz_handheld_create_all(struct Handheld*** handhelds) {
     #if defined(unix) || defined(__unix__) || defined(__unix)
         // Get all SCSI disks on the system
         glob_t globbuf;
-        if (!glob("/dev/sd*", 0, NULL, &globbuf)) {
+        int glob_rc = glob("/dev/sd*", 0, NULL, &globbuf);
+        if (glob_rc == 0) {
             size_t handhelds_array_size = (globbuf.gl_pathc + 1) * sizeof(struct Handheld*);
             *handhelds = malloc(handhelds_array_size);
             memset(*handhelds, 0, handhelds_array_size);
@@ -190,8 +191,8 @@ int miuchiz_handheld_create_all(struct Handheld*** handhelds) {
                     miuchiz_handheld_destroy(handheld_candidate);
                 }
             }
+            globfree(&globbuf);
         }
-        globfree(&globbuf);
     #elif defined(_WIN32)
         // Get all the drive letters mounted
         unsigned int mask = GetLogicalDrives();
