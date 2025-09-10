@@ -152,13 +152,17 @@ fp_t miuchiz_handheld_open(struct Handheld* handheld) {
 }
 
 void miuchiz_handheld_close(struct Handheld* handheld) {
-    if (handheld->fd > 0) {
-        #if defined(unix) || defined(__unix__) || defined(__unix)
+    #if defined(unix) || defined(__unix__) || defined(__unix)
+        if (handheld->fd != -1) {
             close(handheld->fd);
-        #elif defined(_WIN32)
+            handheld->fd = -1;
+        }
+    #elif defined(_WIN32)
+        if (handheld->fd != INVALID_HANDLE_VALUE) {
             CloseHandle(handheld->fd);
-        #endif 
-    } 
+            handheld->fd = INVALID_HANDLE_VALUE;
+        }
+    #endif 
 }
 
 int miuchiz_handheld_create_all(struct Handheld*** handhelds) {
