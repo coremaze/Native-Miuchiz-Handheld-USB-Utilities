@@ -232,7 +232,8 @@ int miuchiz_handheld_is_handheld(struct Handheld* handheld) {
         is_handheld = 0;
     }
     else {
-        is_handheld = strcmp(&data[43], "SITRONIXTM") == 0;
+        // This is how Miuchiz Sync checks to see if a mass storage device is a handheld
+        is_handheld = memcmp(data + 43, "SITRONIXTM", 10) == 0;
     }
 
     free(data);
