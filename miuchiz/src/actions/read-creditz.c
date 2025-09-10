@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <string.h>
+#include <stdint.h>
 
 struct args {
     char* device;
@@ -125,7 +126,8 @@ int read_creditz_main(int argc, char** argv) {
      * There's not really a cleaner way to do this without mapping
      * out the entire page as a struct. */ 
     miuchiz_handheld_read_page(handheld, 0x1FF, page, sizeof(page));
-    int creditz = hcd_to_int(*(unsigned int*)&page[0x9AA]);
+    uint32_t hcd_le = miuchiz_le32_read((unsigned char*)&page[0x9AA]);
+    int creditz = miuchiz_hcd_decode(hcd_le);
     printf("%d\n", creditz);
     
 leave_handhelds:

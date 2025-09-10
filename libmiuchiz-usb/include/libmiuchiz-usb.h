@@ -1,6 +1,7 @@
 #ifndef MIUCHIZ_LIBMIUCHIZ_LIBMIUCHIZ_H
 #define MIUCHIZ_LIBMIUCHIZ_LIBMIUCHIZ_H
 #include <unistd.h>
+#include <stdint.h>
 
 #if defined(unix) || defined(__unix__) || defined(__unix)
     typedef int fp_t;
@@ -146,5 +147,47 @@ void miuchiz_hex_dump(const void* buffer, size_t n);
  *@return Alignment required.
  */
 long miuchiz_page_alignment();
+
+/**
+ *Parses a 32-bit little-endian HCD-encoded integer from 4 bytes.
+ *@param bytes Pointer to 4 bytes in little-endian order.
+ *@return Host-endian integer value of the HCD word (not decimal expanded).
+ */
+uint32_t miuchiz_le32_read(const unsigned char* bytes);
+
+/**
+ *Writes a 32-bit value as little-endian bytes.
+ *@param bytes Destination buffer of at least 4 bytes.
+ *@param value Host-endian value to write.
+ */
+void miuchiz_le32_write(unsigned char* bytes, uint32_t value);
+
+/**
+ *Reads a 16-bit value as little-endian bytes.
+ *@param bytes Pointer to 2 bytes in little-endian order.
+ *@return Host-endian integer value of the 16-bit word (not decimal expanded).
+ */
+uint16_t miuchiz_le16_read(const unsigned char* bytes);
+
+/**
+ *Writes a 16-bit value as little-endian bytes.
+ *@param bytes Destination buffer of at least 2 bytes.
+ *@param value Host-endian value to write.
+ */
+void miuchiz_le16_write(unsigned char* bytes, uint16_t value);
+
+/**
+ *Converts a host-endian integer to HCD (hex-coded decimal) 32-bit value.
+ *@param value Unsigned 32-bit integer (up to 8 decimal digits used).
+ *@return 32-bit value where each nibble encodes a decimal digit (little-endian).
+ */
+uint32_t miuchiz_hcd_encode(uint32_t value);
+
+/**
+ *Converts a 32-bit HCD (hex-coded decimal) value to a host-endian unsigned 32-bit integer.
+ *@param hcd_le 32-bit value where each nibble encodes a decimal digit (little-endian).
+ *@return Parsed unsigned 32-bit integer.
+ */
+uint32_t miuchiz_hcd_decode(uint32_t hcd_le);
 
 #endif

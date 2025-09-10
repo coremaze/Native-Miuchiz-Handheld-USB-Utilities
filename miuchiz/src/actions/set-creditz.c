@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <string.h>
+#include <stdint.h>
 
 struct args {
     char* device;
@@ -127,7 +128,8 @@ int set_creditz_main(int argc, char** argv) {
      * There's not really a cleaner way to do this without mapping
      * out the entire page as a struct. */ 
     miuchiz_handheld_read_page(handheld, 0x1FF, page, sizeof(page));
-    *(unsigned int*)&page[0x9AA] = int_to_hcd(creditz);
+    uint32_t hcd_raw = miuchiz_hcd_encode(creditz);
+    miuchiz_le32_write((unsigned char*)&page[0x9AA], hcd_raw);
     miuchiz_handheld_write_page(handheld, 0x1FF, page, sizeof(page));
     
 leave_handhelds:
