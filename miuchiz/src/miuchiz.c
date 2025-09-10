@@ -119,18 +119,19 @@ int main(int argc, char** argv) {
          action++) {
         
         if (strcmp(action_arg, action->phrase) == 0) {
-            char** new_argv = malloc(sizeof(char*) * argc);
+            char** new_argv = malloc(sizeof(char*) * (argc));
             int new_argc = argc - 1;
 
             // The command's argv[0] will be like "miuchiz <command>"
-            int new_arg0_size = strlen(argv[0]) + sizeof(' ') + strlen(action_arg) + sizeof('\0');
+            size_t new_arg0_size = strlen(argv[0]) + 1 /* space */ + strlen(action_arg) + 1 /* NUL */;
             new_argv[0] = malloc(new_arg0_size);
-            sprintf(new_argv[0], "%s %s", argv[0], action_arg);
+            snprintf(new_argv[0], new_arg0_size, "%s %s", argv[0], action_arg);
 
             // argv[1] has been manually handled, so start at 2
             for (int i = 2; i < argc; i++) {
                 new_argv[i - 1] = argv[i];
             }
+            new_argv[new_argc] = NULL;
 
             result = action->function(new_argc, new_argv);
             
