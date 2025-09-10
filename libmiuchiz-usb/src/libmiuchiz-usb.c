@@ -13,6 +13,7 @@
     #include <glob.h>
 #elif defined(_WIN32)
     #include <windows.h>
+    #include <malloc.h>
 #endif
 
 #define LOG_ERRORS 0
@@ -98,14 +99,22 @@ static off_t _miuchiz_handheld_seek(struct Handheld* handheld, off_t offset) {
 
 static void* _miuchiz_dma_alloc(size_t size) {
     #if defined(unix) || defined(__unix__) || defined(__unix)
-        return aligned_alloc(miuchiz_page_alignment(), size);
+        size_t alignment = (size_t)miuchiz_page_alignment();
+        // Ensure that the size is a multiple of the alignment
+        size_t alloc_size = miuchiz_round_size_up(size, (int)alignment);
+        return aligned_alloc(alignment, alloc_size);
     #elif defined(_WIN32)
-        return malloc(size);
+        size_t alignment = (size_t)miuchiz_page_alignment();
+        return _aligned_malloc(size, alignment);
     #endif
 }
 
 static void _miuchiz_dma_free(void* p) {
-    free(p);
+    #if defined(unix) || defined(__unix__) || defined(__unix)
+        free(p);
+    #elif defined(_WIN32)
+        _aligned_free(p);
+    #endif
 }
 
 // End internal functions
@@ -247,6 +256,12 @@ int miuchiz_handheld_write_sector(struct Handheld* handheld, int sector, const v
     }
 
     char* aligned_buf = _miuchiz_dma_alloc(ndata);
+    if (aligned_buf == NULL) {
+        if (LOG_ERRORS) {
+            printf("_miuchiz_dma_alloc failed in write_sector.\n");
+        }
+        return -1;
+    }
 
     memcpy(aligned_buf, data, ndata);
 
@@ -272,6 +287,12 @@ int miuchiz_handheld_read_sector(struct Handheld* handheld, int sector, void* bu
     size_t required_size = miuchiz_round_size_up(nbuf, MIUCHIZ_SECTOR_SIZE); 
 
     char* aligned_buf = _miuchiz_dma_alloc(required_size);
+    if (aligned_buf == NULL) {
+        if (LOG_ERRORS) {
+            printf("_miuchiz_dma_alloc failed in read_sector.\n");
+        }
+        return -1;
+    }
 
     _miuchiz_handheld_seek(handheld, sector * MIUCHIZ_SECTOR_SIZE);
     int result = _miuchiz_handheld_read(handheld, aligned_buf, required_size);
@@ -293,6 +314,12 @@ int miuchiz_handheld_send_scsi(struct Handheld* handheld, const void* data, size
     size_t required_size = miuchiz_round_size_up(ndata, MIUCHIZ_SECTOR_SIZE); 
 
     char* padded_data = _miuchiz_dma_alloc(required_size);
+    if (padded_data == NULL) {
+        if (LOG_ERRORS) {
+            printf("_miuchiz_dma_alloc failed in send_scsi.\n");
+        }
+        return -1;
+    }
     memset(padded_data, 0, required_size);
     memcpy(padded_data, data, ndata);
 
