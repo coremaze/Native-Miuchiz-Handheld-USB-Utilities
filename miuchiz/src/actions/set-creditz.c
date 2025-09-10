@@ -123,6 +123,17 @@ int set_creditz_main(int argc, char** argv) {
         }
     }
 
+    if (!handheld) {
+        if (specified_device) {
+            fprintf(stderr, "No handheld was found at %s.\n", specified_device);
+        }
+        else {
+            fprintf(stderr, "Unable to find handheld.\n");
+        }
+        result = 1;
+        goto leave_handhelds;
+    }
+
     // Set creditz for the handheld
     char page[MIUCHIZ_PAGE_SIZE] = { 0 };
     /* 0x9AA on page 0x1FF happens to be where creditz are stored.
