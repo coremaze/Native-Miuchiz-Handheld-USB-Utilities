@@ -1,4 +1,5 @@
 #include "libmiuchiz-usb.h"
+#include "actions/status.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,9 +15,13 @@ union miuchiz_u32_t {
     uint8_t b[4];
 };
 
-static char* units[] = {"Cloe", "Yasmin", "Spike", "Dash", "Roc", "Creeper", "Inferno"};
+static const char* units[] = {"Cloe", "Yasmin", "Spike", "Dash", "Roc", "Creeper", "Inferno"};
 
 int status_main(int argc, char** argv) {
+    // status takes no arguments; the action interface mandates this signature.
+    (void)argc;
+    (void)argv;
+
     struct Handheld** handhelds;
     int handheld_count = miuchiz_handheld_create_all(&handhelds);
 
@@ -39,7 +44,7 @@ int status_main(int argc, char** argv) {
 
         union miuchiz_u16_t major_version = *(union miuchiz_u16_t*)&page[0x9A4];
         uint8_t unit_id = *(uint8_t*)&page[0x9A8];
-        char* unit = unit_id < (sizeof(units) / sizeof(*units)) ? units[unit_id] : "Unknown";
+        const char* unit = unit_id < (sizeof(units) / sizeof(*units)) ? units[unit_id] : "Unknown";
 
         printf("Device: %s; Major version: %d.%02d; Character: %s\n", 
                 handheld->device,

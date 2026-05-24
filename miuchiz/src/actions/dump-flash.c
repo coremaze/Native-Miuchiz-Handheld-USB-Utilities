@@ -1,4 +1,5 @@
 #include "libmiuchiz-usb.h"
+#include "actions/dump-flash.h"
 #include "timer.h"
 
 #include <stdlib.h>
@@ -138,7 +139,7 @@ int dump_flash_main(int argc, char** argv) {
 
         for (int retry = 0; retry < 5; retry++) {
             int read_result = miuchiz_handheld_read_page(handheld, pagenum, page, sizeof(page));
-            if (read_result == -1) {
+            if (read_result == MIUCHIZ_ERROR_IO) {
                 printf("\rReading of page %d failed. Retrying.\n", pagenum);
             }
             else {
@@ -152,7 +153,11 @@ int dump_flash_main(int argc, char** argv) {
             break;
         }
 
-        size_t write_result = fwrite(page, 1, sizeof(page), fp);
+        if (fwrite(page, 1, sizeof(page), fp) != sizeof(page)) {
+            printf("\rWriting page %d to file failed.\n", pagenum);
+            result = 1;
+            break;
+        }
     }
 
     if (success) {

@@ -1,4 +1,5 @@
 #include "libmiuchiz-usb.h"
+#include "actions/load-flash.h"
 #include "timer.h"
 
 #include <stdlib.h>
@@ -71,7 +72,7 @@ static void args_free(struct args* args) {
     free(args->mirrorfile);
 }
 
-int copy_mirror(FILE* target, FILE* source) {
+static int copy_mirror(FILE* target, FILE* source) {
     if (!target || !source) {
         return 1;
     }
@@ -91,7 +92,7 @@ int copy_mirror(FILE* target, FILE* source) {
     return 0;
 }
 
-int load_flash_setup(int argc, char** argv, struct setup_info* info) {
+static int load_flash_setup(int argc, char** argv, struct setup_info* info) {
     info->infile_fp = NULL;
     info->mirrorfile_fp = NULL;
     info->handhelds = NULL;
@@ -178,7 +179,7 @@ int load_flash_setup(int argc, char** argv, struct setup_info* info) {
     return 0;
 }
 
-int load_flash_process(struct setup_info* info) {
+static int load_flash_process(struct setup_info* info) {
     struct Utimer timer;
     miuchiz_utimer_start(&timer);
 
@@ -229,7 +230,7 @@ int load_flash_process(struct setup_info* info) {
             if (!page_write_success && info->args.check_changes) {
                 char device_page[MIUCHIZ_PAGE_SIZE] = { 0 };
                 int device_read_result = miuchiz_handheld_read_page(info->target_handheld, pagenum, device_page, sizeof(device_page));
-                if (device_read_result == -1) {
+                if (device_read_result == MIUCHIZ_ERROR_IO) {
                     printf("\rReading from page %d of device failed. Retrying.\n", pagenum);
                     continue;
                 }
@@ -241,7 +242,7 @@ int load_flash_process(struct setup_info* info) {
             // This page may have already been considered successfully written due to check-changes
             if (!page_write_success) {
                 int write_result = miuchiz_handheld_write_page(info->target_handheld, pagenum, page, sizeof(page));
-                if (write_result == -1) {
+                if (write_result == MIUCHIZ_ERROR_IO) {
                     printf("\rWriting of page %d to device failed. Retrying.\n", pagenum);
                     continue;
                 }
@@ -281,7 +282,7 @@ int load_flash_process(struct setup_info* info) {
     return 0;
 }
 
-void load_flash_cleanup(struct setup_info* info) {
+static void load_flash_cleanup(struct setup_info* info) {
     if (info->infile_fp) {
         fclose(info->infile_fp);
     }

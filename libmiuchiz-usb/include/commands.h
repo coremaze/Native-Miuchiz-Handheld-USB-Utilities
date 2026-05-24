@@ -23,7 +23,7 @@ struct __attribute__ ((packed)) SCSIWriteFilemarksCommand {
 
 struct SCSIReadCommand miuchiz_scsi_read_command(uint32_t source_page);
 struct SCSIWriteCommand miuchiz_scsi_write_command(uint32_t destination_page, uint32_t payload_size);
-struct SCSIReadReverseCommand miuchiz_scsi_read_reverse_command();
-struct SCSIWriteFilemarksCommand miuchiz_scsi_write_filemarks_command();
+struct SCSIReadReverseCommand miuchiz_scsi_read_reverse_command(void);
+struct SCSIWriteFilemarksCommand miuchiz_scsi_write_filemarks_command(void);
 
 #endif

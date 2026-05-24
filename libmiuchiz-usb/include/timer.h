@@ -4,7 +4,7 @@
 #include <time.h>
 #include <inttypes.h>
 
-#if defined(unix) || defined(__unix__) || defined(__unix)
+#if defined(unix) || defined(__unix__) || defined(__unix) || defined(__APPLE__)
     #define utimer_time_t struct timespec
 #elif defined(_WIN32)
     #define utimer_time_t struct timeval

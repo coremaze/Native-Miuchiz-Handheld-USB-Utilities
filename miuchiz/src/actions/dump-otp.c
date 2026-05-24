@@ -1,4 +1,5 @@
 #include "libmiuchiz-usb.h"
+#include "actions/dump-otp.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -61,7 +62,7 @@ static void args_free(struct args* args) {
 static uint64_t checksum(void* buf, size_t n) {
     uint8_t* buffer = (uint8_t*)buf;
     uint64_t result = 0;
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         result += buffer[i];
     }
     return result;
@@ -141,7 +142,8 @@ int dump_otp_main(int argc, char** argv) {
     otp = malloc(OTP_SIZE);
     read_sector = malloc(OTP_SIZE);
 
-    if (miuchiz_handheld_read_sector(target_handheld, 0, read_sector, OTP_SIZE) != OTP_SIZE) {
+    int otp_bytes_read = miuchiz_handheld_read_sector(target_handheld, 0, read_sector, OTP_SIZE);
+    if (otp_bytes_read < 0 || (size_t)otp_bytes_read != OTP_SIZE) {
         fprintf(stderr, "Failed to read OTP from device.\n");
         result = 1;
         goto leave;
@@ -154,7 +156,7 @@ int dump_otp_main(int argc, char** argv) {
     fwrite(otp, 1, OTP_SIZE, fp);
 
     if (args.do_checksum) {
-        printf("Checksum: %llX\n", checksum(otp, OTP_SIZE));
+        printf("Checksum: %llX\n", (unsigned long long)checksum(otp, OTP_SIZE));
     }
 
 leave:

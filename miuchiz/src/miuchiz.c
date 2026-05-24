@@ -6,6 +6,8 @@
 #include "actions/set-creditz.h"
 #include "actions/status.h"
 
+#include "libmiuchiz-usb.h"
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +15,7 @@
 #include <getopt.h>
 
 struct action {
-    char* phrase;
+    const char* phrase;
     int (*function)(int argc, char** argv);
 };
 
@@ -36,14 +38,17 @@ static void help(const char* program_name) {
     printf("%s - Miuchiz Handheld USB Utilities\n", program_name);
     printf("Available actions:\n");
 
-    for (struct action* action = (struct action*)&actions; 
+    for (struct action* action = (struct action*)&actions;
          action->phrase != NULL && action->function != NULL;
-         action++) { 
+         action++) {
         printf("\t%s %s\n", program_name, action->phrase);
     }
+
+    printf("Options:\n");
+    printf("\t--verbose, -V\tEnable diagnostic logging to stderr\n");
 }
 
-static void version() {
+static void version(void) {
     printf("%s\n", MIUCHIZ_UTILS_VERSION);
 }
 
@@ -84,6 +89,25 @@ leave:
     return result;
 }
 
+/* Removes the global --verbose/-V flag from argv wherever it appears and
+ * returns whether it was present. Handling it here (rather than in each action)
+ * lets it work before or after the action name and keeps it out of the
+ * per-action option parsers, which would reject it as unknown. */
+static int extract_verbose(int* argc, char** argv) {
+    int verbose = 0;
+    int w = 1; // preserve argv[0]
+    for (int r = 1; r < *argc; r++) {
+        if (strcmp(argv[r], "-V") == 0 || strcmp(argv[r], "--verbose") == 0) {
+            verbose = 1;
+        }
+        else {
+            argv[w++] = argv[r];
+        }
+    }
+    *argc = w;
+    return verbose;
+}
+
 int main(int argc, char** argv) {
     int result = 0;
 
@@ -99,6 +123,10 @@ int main(int argc, char** argv) {
     }
     else {
         program_name = strdup(env_program_name);
+    }
+
+    if (extract_verbose(&argc, argv)) {
+        miuchiz_set_logging(1);
     }
 
     if (handle_opt(argc, argv, program_name)) {

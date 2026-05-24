@@ -1,11 +1,10 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.10)
 set(LOCAL_PROJECT_NAME miuchiz)
 project(${LOCAL_PROJECT_NAME} VERSION 1.1 LANGUAGES C)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DMIUCHIZ_UTILS_VERSION=\"\\\"${PROJECT_VERSION}\"\\\"")
 
-include_directories(../libmiuchiz-usb/include
-                    ./include)
+include_directories(./include)
 
 add_executable(${LOCAL_PROJECT_NAME} src/miuchiz.c
                                      src/actions/dump-flash.c
@@ -23,6 +22,8 @@ if (WIN32)
          DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 ENDIF()
 
-target_link_libraries(${LOCAL_PROJECT_NAME} miuchiz-usb) 
+# Linking miuchiz-usb pulls in its public include dirs, the libusb selection
+# macro, and any libusb link flags, so no platform-specific setup is needed here.
+target_link_libraries(${LOCAL_PROJECT_NAME} miuchiz-usb)
 INSTALL(TARGETS ${LOCAL_PROJECT_NAME} DESTINATION bin)
 INSTALL(FILES completions/miuchiz DESTINATION share/bash-completion/completions)

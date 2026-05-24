@@ -1,6 +1,6 @@
 #include "commands.h"
 
-#if defined(unix) || defined(__unix__) || defined(__unix)
+#if defined(unix) || defined(__unix__) || defined(__unix) || defined(__APPLE__)
     #include <arpa/inet.h>
 #elif defined(_WIN32)
     uint32_t htonl(uint32_t hostlong) {
@@ -36,13 +36,13 @@ struct SCSIWriteCommand miuchiz_scsi_write_command(uint32_t destination_page, ui
     return result;
 }
 
-struct SCSIReadReverseCommand miuchiz_scsi_read_reverse_command() {
+struct SCSIReadReverseCommand miuchiz_scsi_read_reverse_command(void) {
     struct SCSIReadReverseCommand result;
     result.opcode = MIUCHIZ_SCSI_OPCODE_READ_REVERSE;
     return result;
 }
 
-struct SCSIWriteFilemarksCommand miuchiz_scsi_write_filemarks_command() {
+struct SCSIWriteFilemarksCommand miuchiz_scsi_write_filemarks_command(void) {
     struct SCSIWriteFilemarksCommand result;
     result.opcode = MIUCHIZ_SCSI_OPCODE_WRITE_FILEMARKS;
     return result;

@@ -1,4 +1,5 @@
 #include "libmiuchiz-usb.h"
+#include "actions/set-creditz.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -50,7 +51,7 @@ static void args_free(struct args* args) {
     free(args->creditz);
 }
 
-int int_to_hcd(int num) {
+static int int_to_hcd(int num) {
     int result = 0;
     int place = 1;
     int digit;
@@ -76,7 +77,7 @@ int set_creditz_main(int argc, char** argv) {
 
     int creditz = 0;
     // Ensure creditz is a number
-    for (int i = 0; i < strlen(args.creditz); i++) {
+    for (size_t i = 0; i < strlen(args.creditz); i++) {
         if (!isdigit(args.creditz[i])) {
             fprintf(stderr, "Invalid creditz amount: %s\n", args.creditz);
             result = 1;

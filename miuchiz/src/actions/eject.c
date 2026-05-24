@@ -1,4 +1,5 @@
 #include "libmiuchiz-usb.h"
+#include "actions/eject.h"
 
 #include <stdlib.h>
 #include <stdio.h>
