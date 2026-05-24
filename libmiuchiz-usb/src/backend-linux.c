@@ -20,8 +20,9 @@ fp_t miuchiz_backend_open(struct Handheld* handheld) {
 }
 
 void miuchiz_backend_close(struct Handheld* handheld) {
-    if (handheld->fd > 0) {
+    if (handheld->fd != -1) {
         close(handheld->fd);
+        handheld->fd = -1;
     }
 }
 
@@ -85,14 +86,17 @@ int miuchiz_backend_enumerate(struct Handheld*** handhelds) {
                 miuchiz_handheld_destroy(handheld_candidate);
             }
         }
+        globfree(&globbuf);
     }
-    globfree(&globbuf);
 
     return handhelds_count;
 }
 
 void* miuchiz_backend_dma_alloc(size_t size) {
-    return aligned_alloc(miuchiz_page_alignment(), size);
+    size_t alignment = (size_t)miuchiz_page_alignment();
+    // aligned_alloc requires the size to be a multiple of the alignment.
+    size_t alloc_size = miuchiz_round_size_up(size, (int)alignment);
+    return aligned_alloc(alignment, alloc_size);
 }
 
 void miuchiz_backend_dma_free(void* p) {

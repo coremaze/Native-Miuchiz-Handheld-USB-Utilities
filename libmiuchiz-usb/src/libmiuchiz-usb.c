@@ -54,7 +54,8 @@ int miuchiz_handheld_is_handheld(struct Handheld* handheld) {
         is_handheld = 0;
     }
     else {
-        is_handheld = strcmp(&data[43], "SITRONIXTM") == 0;
+        // This is how Miuchiz Sync checks to see if a mass storage device is a handheld
+        is_handheld = memcmp(data + 43, "SITRONIXTM", 10) == 0;
     }
 
     free(data);
@@ -67,6 +68,10 @@ int miuchiz_handheld_write_sector(struct Handheld* handheld, int sector, const v
     }
 
     char* aligned_buf = miuchiz_backend_dma_alloc(ndata);
+    if (aligned_buf == NULL) {
+        miuchiz_log("miuchiz_handheld_write_sector: allocation failed\n");
+        return MIUCHIZ_ERROR_IO;
+    }
 
     memcpy(aligned_buf, data, ndata);
 
@@ -92,6 +97,10 @@ int miuchiz_handheld_read_sector(struct Handheld* handheld, int sector, void* bu
     size_t required_size = miuchiz_round_size_up(nbuf, MIUCHIZ_SECTOR_SIZE);
 
     char* aligned_buf = miuchiz_backend_dma_alloc(required_size);
+    if (aligned_buf == NULL) {
+        miuchiz_log("miuchiz_handheld_read_sector: allocation failed\n");
+        return MIUCHIZ_ERROR_IO;
+    }
 
     miuchiz_backend_seek(handheld, sector * MIUCHIZ_SECTOR_SIZE);
     int result = miuchiz_backend_read(handheld, aligned_buf, required_size);
@@ -112,6 +121,10 @@ int miuchiz_handheld_send_scsi(struct Handheld* handheld, const void* data, size
     size_t required_size = miuchiz_round_size_up(ndata, MIUCHIZ_SECTOR_SIZE);
 
     char* padded_data = miuchiz_backend_dma_alloc(required_size);
+    if (padded_data == NULL) {
+        miuchiz_log("miuchiz_handheld_send_scsi: allocation failed\n");
+        return MIUCHIZ_ERROR_IO;
+    }
     memset(padded_data, 0, required_size);
     memcpy(padded_data, data, ndata);
 
@@ -143,18 +156,27 @@ int miuchiz_handheld_read_page(struct Handheld* handheld, int page, void* buf, s
 
     // Read response data from device's data output interface
     {
-        struct __attribute__ ((packed)) page_data_t {
-            int32_t length_be; char data[0];
-        };
+        // The response will look like this:
+        // 4 bytes length, big endian
+        // length of data, but we fill with the size requested
 
         size_t page_data_size = sizeof(int32_t) + nbuf;
-
-        struct page_data_t* page_data = malloc(page_data_size);
-        memset(page_data, 0, page_data_size);
-
-        read_result = miuchiz_handheld_read_sector(handheld, MIUCHIZ_SECTOR_DATA_READ, page_data, page_data_size);
-
-        memcpy(buf, &page_data->data[0], nbuf);
+        unsigned char* page_data = malloc(page_data_size);
+        if (page_data == NULL) {
+            miuchiz_log("miuchiz_handheld_read_page: allocation failed\n");
+            read_result = MIUCHIZ_ERROR_IO;
+        }
+        else {
+            read_result = miuchiz_handheld_read_sector(handheld, MIUCHIZ_SECTOR_DATA_READ, page_data, page_data_size);
+            if (read_result >= 0) {
+                // Skip the length bytes
+                memcpy(buf, page_data + sizeof(int32_t), nbuf);
+            }
+            else {
+                miuchiz_log("miuchiz_handheld_read_sector failed in read_page. [%d] %s\n", errno, strerror(errno));
+            }
+            free(page_data);
+        }
     }
 
     // Send terminator to command interface
@@ -241,4 +263,51 @@ long miuchiz_page_alignment(void) {
         }
     }
     return page_size;
+}
+
+uint32_t miuchiz_le32_read(const unsigned char* bytes) {
+    return ((uint32_t)bytes[0])
+         | ((uint32_t)bytes[1] << 8)
+         | ((uint32_t)bytes[2] << 16)
+         | ((uint32_t)bytes[3] << 24);
+}
+
+void miuchiz_le32_write(unsigned char* bytes, uint32_t value) {
+    bytes[0] = (unsigned char)(value & 0xFF);
+    bytes[1] = (unsigned char)((value >> 8) & 0xFF);
+    bytes[2] = (unsigned char)((value >> 16) & 0xFF);
+    bytes[3] = (unsigned char)((value >> 24) & 0xFF);
+}
+
+uint16_t miuchiz_le16_read(const unsigned char* bytes) {
+    return ((uint16_t)bytes[0])
+         | ((uint16_t)bytes[1] << 8);
+}
+
+void miuchiz_le16_write(unsigned char* bytes, uint16_t value) {
+    bytes[0] = (unsigned char)(value & 0xFF);
+    bytes[1] = (unsigned char)((value >> 8) & 0xFF);
+}
+
+uint32_t miuchiz_hcd_encode(uint32_t value) {
+    uint32_t result = 0;
+    uint32_t place = 0;
+    for (int i = 0; i < 8; i++) {
+        int digit = value % 10;
+        result |= ((uint32_t)(digit & 0xF)) << place;
+        place += 4;
+        value /= 10;
+    }
+    return result;
+}
+
+uint32_t miuchiz_hcd_decode(uint32_t hcd_le) {
+    int result = 0;
+    int place = 1;
+    for (int i = 0; i < 8; i++) {
+        int digit = (hcd_le >> (i * 4)) & 0xF;
+        result += digit * place;
+        place *= 10;
+    }
+    return result;
 }

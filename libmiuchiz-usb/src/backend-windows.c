@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
+#include <malloc.h>
 
 fp_t miuchiz_backend_open(struct Handheld* handheld) {
     handheld->fd = CreateFileA(handheld->device,
@@ -26,6 +27,7 @@ fp_t miuchiz_backend_open(struct Handheld* handheld) {
 void miuchiz_backend_close(struct Handheld* handheld) {
     if (handheld->fd != INVALID_HANDLE_VALUE) {
         CloseHandle(handheld->fd);
+        handheld->fd = INVALID_HANDLE_VALUE;
     }
 }
 
@@ -120,11 +122,12 @@ int miuchiz_backend_enumerate(struct Handheld*** handhelds) {
 }
 
 void* miuchiz_backend_dma_alloc(size_t size) {
-    return malloc(size);
+    size_t alignment = (size_t)miuchiz_page_alignment();
+    return _aligned_malloc(size, alignment);
 }
 
 void miuchiz_backend_dma_free(void* p) {
-    free(p);
+    _aligned_free(p);
 }
 
 long miuchiz_backend_page_alignment(void) {
