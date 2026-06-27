@@ -1,7 +1,29 @@
 #ifndef MIUCHIZ_LIBMIUCHIZ_USB_H
 #define MIUCHIZ_LIBMIUCHIZ_USB_H
-#include <unistd.h>
+#include <stddef.h>
 #include <stdint.h>
+
+/*
+ * Portable POSIX-ish types used throughout the backend interface (ssize_t,
+ * off_t). POSIX platforms, and MinGW, get them from <unistd.h>. MSVC ships
+ * neither in <unistd.h> (it has no such header), so pull the equivalents in
+ * from the Win32 SDK instead: SSIZE_T from <BaseTsd.h> and off_t from
+ * <sys/types.h> (where MSVC defines it as long, wide enough for the small
+ * volume offsets this library uses).
+ */
+#if defined(_WIN32) && !defined(__MINGW32__)
+    #include <BaseTsd.h>
+    #include <sys/types.h>
+    /* Guard against a redefinition error if another header in the consumer's
+     * translation unit already provided ssize_t. _SSIZE_T_DEFINED is the guard
+     * macro that Windows toolchains conventionally use for exactly this. */
+    #if !defined(_SSIZE_T_DEFINED)
+        typedef SSIZE_T ssize_t;
+        #define _SSIZE_T_DEFINED
+    #endif
+#else
+    #include <unistd.h>
+#endif
 
 /*
  * Backend selection.
@@ -27,7 +49,7 @@
         uint32_t current_sector;
     } fp_t;
 #elif defined(_WIN32)
-    #include "fileapi.h"
+    #include <windows.h>
     typedef HANDLE fp_t;
 #elif defined(unix) || defined(__unix__) || defined(__unix)
     typedef int fp_t;

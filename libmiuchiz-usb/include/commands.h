@@ -2,23 +2,25 @@
 #define MIUCHIZ_LIBMIUCHIZ_COMMANDS_H
 #include <inttypes.h>
 
-struct __attribute__ ((packed)) SCSIReadCommand {
-    char opcode;
-    uint32_t source_page_be;
+#define MIUCHIZ_SCSI_READ_COMMAND_SIZE            (5) /* opcode + 4-byte BE page */
+#define MIUCHIZ_SCSI_WRITE_COMMAND_SIZE           (9) /* opcode + 4-byte BE page + 4-byte BE size */
+#define MIUCHIZ_SCSI_READ_REVERSE_COMMAND_SIZE    (1) /* opcode */
+#define MIUCHIZ_SCSI_WRITE_FILEMARKS_COMMAND_SIZE (1) /* opcode */
+
+struct SCSIReadCommand {
+    unsigned char bytes[MIUCHIZ_SCSI_READ_COMMAND_SIZE];
 };
 
-struct __attribute__ ((packed)) SCSIWriteCommand {
-    char opcode;
-    uint32_t destination_page_be;
-    uint32_t payload_size_be;
+struct SCSIWriteCommand {
+    unsigned char bytes[MIUCHIZ_SCSI_WRITE_COMMAND_SIZE];
 };
 
-struct __attribute__ ((packed)) SCSIReadReverseCommand {
-    char opcode;
+struct SCSIReadReverseCommand {
+    unsigned char bytes[MIUCHIZ_SCSI_READ_REVERSE_COMMAND_SIZE];
 };
 
-struct __attribute__ ((packed)) SCSIWriteFilemarksCommand {
-    char opcode;
+struct SCSIWriteFilemarksCommand {
+    unsigned char bytes[MIUCHIZ_SCSI_WRITE_FILEMARKS_COMMAND_SIZE];
 };
 
 struct SCSIReadCommand miuchiz_scsi_read_command(uint32_t source_page);

@@ -88,7 +88,7 @@ int miuchiz_backend_enumerate(struct Handheld*** handhelds) {
 
     // Get all the drive letters mounted
     unsigned int mask = GetLogicalDrives();
-    char letters[256] = { };
+    char letters[256] = { 0 };
     int letters_count = 0;
     for (int i = 0; mask; i++) {
         if (mask & 1) {
