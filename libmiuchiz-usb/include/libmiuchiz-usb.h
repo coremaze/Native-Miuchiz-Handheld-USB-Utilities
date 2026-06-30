@@ -68,6 +68,10 @@
 #define MIUCHIZ_ERROR_IO        (-1) /* I/O failure; errno is set */
 #define MIUCHIZ_ERROR_TOO_SMALL (-2) /* buffer/data was smaller than one sector */
 #define MIUCHIZ_ERROR_PAGE_SIZE (-3) /* size argument invalid for a page operation */
+#define MIUCHIZ_ERROR_ACCESS    (-4) /* a handheld is attached but could not be opened
+                                      * or read - typically the OS denied access (e.g.
+                                      * the macOS removable-volume privacy gate). Distinct
+                                      * from "no device present", which is not an error. */
 
 struct Handheld {
     char* device;

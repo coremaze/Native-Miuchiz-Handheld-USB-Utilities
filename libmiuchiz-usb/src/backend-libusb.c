@@ -417,6 +417,12 @@ off_t miuchiz_backend_seek(struct Handheld* handheld, off_t offset) {
 
 int miuchiz_backend_enumerate(struct Handheld*** handhelds) {
     int handhelds_count = 0;
+    // Whether a device with the Miuchiz vendor/product id is on the bus, even if
+    // we cannot open or read it. Reading USB descriptors is never gated by OS
+    // privacy controls, so this lets us tell "no handheld connected" apart from
+    // "handheld connected but its data could not be accessed" (see the
+    // MIUCHIZ_ERROR_ACCESS return below).
+    int present = 0;
     *handhelds = NULL;
 
     ensure_libusb_init();
@@ -444,6 +450,7 @@ int miuchiz_backend_enumerate(struct Handheld*** handhelds) {
         if (desc.idVendor != SITRONIX_VENDOR || desc.idProduct != SITRONIX_PRODUCT) {
             continue;
         }
+        present = 1;
         uint8_t bus = libusb_get_bus_number(device);
         uint8_t address = libusb_get_device_address(device);
 
@@ -456,6 +463,15 @@ int miuchiz_backend_enumerate(struct Handheld*** handhelds) {
         }
     }
     libusb_free_device_list(list, 1);
+
+    // A Miuchiz device is attached but none could be opened/read - report it as
+    // an access error rather than "nothing found", so the caller can tell the
+    // user their handheld was detected but blocked (e.g. by macOS privacy).
+    if (handhelds_count == 0 && present) {
+        free(*handhelds);
+        *handhelds = NULL;
+        return MIUCHIZ_ERROR_ACCESS;
+    }
 
     return handhelds_count;
 }
