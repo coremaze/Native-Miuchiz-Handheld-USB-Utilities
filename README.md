@@ -19,6 +19,14 @@ To subsequently install:
 sudo make install
 ```
 
+## Connecting a Miuchiz to a computer
+
+  A Miuchiz can be connected to the computer in two ways:
+  
+  1) Hold LEFT and MENU while powering on the device. If the device has batteries, only pressing the RESET button will truly reboot the device. The device will display "Please Connect to PC" and connect over USB. This is recommended when doing complete flash reads or writes.
+  
+  2) Navigate to the computer room on the handheld and use the computer. The Miuchiz can connect over USB.
+
 ## Usage
 
 ### Dump flash
