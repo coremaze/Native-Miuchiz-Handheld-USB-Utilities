@@ -42,6 +42,8 @@ Dumps the entire flash of a Miuchiz device to a file.
 
 `-d` or `--device` may be specified with an argument to distinguish between multiple connected Miuchiz devices.
 
+`-c` or `--checksum` may be specified in order to perform a checksum on the result. The checksum is performed in the same manner the device's test program performs it: the sum of every byte from offset 0x1F000 to the end of the flash. The first 0x1F000 bytes are excluded. The device's test program displays only the low 16 bits of this sum.
+
 ### Dump OTP
 
 ```

@@ -8,30 +8,42 @@
 #include <errno.h>
 #include <getopt.h>
 #include <string.h>
+#include <stdint.h>
+
+/* The device's test program checksums the flash starting at this offset,
+ * skipping everything before it. */
+#define FLASH_CHECKSUM_START (0x1F000)
 
 struct args {
     char* device;
     char* outfile;
+    int do_checksum;
 };
 
 static void usage(char* program_name) {
-    fprintf(stderr, "Usage: %s [-d device] outfile\n", program_name);
+    fprintf(stderr, "Usage: %s [-d device] [-c] outfile\n", program_name);
 }
 
 static int args_parse(struct args* args, int argc, char** argv) {
     int opt;
     int option_index;
     static struct option long_options[] = {
-        {"device", required_argument, 0, 'd' },
+        {"device",   required_argument, 0, 'd' },
+        {"checksum", no_argument,       0, 'c' },
         {0,        0,                 0,  0 }
     };
 
     memset(args, 0, sizeof(*args));
 
-    while ((opt = getopt_long(argc, argv, "d:", (struct option*)&long_options, &option_index)) != -1) {
+    args->do_checksum = 0;
+
+    while ((opt = getopt_long(argc, argv, "d:c", (struct option*)&long_options, &option_index)) != -1) {
         switch (opt) {
             case 'd':
                 args->device = strdup(optarg);
+                break;
+            case 'c':
+                args->do_checksum = 1;
                 break;
             default:
                 return 1;
@@ -51,6 +63,15 @@ static int args_parse(struct args* args, int argc, char** argv) {
 static void args_free(struct args* args) {
     free(args->device);
     free(args->outfile);
+}
+
+static uint64_t checksum(void* buf, size_t n) {
+    uint8_t* buffer = (uint8_t*)buf;
+    uint64_t result = 0;
+    for (size_t i = 0; i < n; i++) {
+        result += buffer[i];
+    }
+    return result;
 }
 
 int dump_flash_main(int argc, char** argv) {
@@ -121,6 +142,7 @@ int dump_flash_main(int argc, char** argv) {
     miuchiz_utimer_start(&timer);
 
     int success = 0;
+    uint64_t flash_checksum = 0;
     for (int pagenum = 0; pagenum < MIUCHIZ_PAGE_COUNT; pagenum++) {
         success = 0;
         char page[MIUCHIZ_PAGE_SIZE] = { 0 };
@@ -153,6 +175,10 @@ int dump_flash_main(int argc, char** argv) {
             break;
         }
 
+        if (args.do_checksum && (size_t)pagenum * MIUCHIZ_PAGE_SIZE >= FLASH_CHECKSUM_START) {
+            flash_checksum += checksum(page, sizeof(page));
+        }
+
         if (fwrite(page, 1, sizeof(page), fp) != sizeof(page)) {
             printf("\rWriting page %d to file failed.\n", pagenum);
             result = 1;
@@ -162,6 +188,9 @@ int dump_flash_main(int argc, char** argv) {
 
     if (success) {
         printf("\n");
+        if (args.do_checksum) {
+            printf("Checksum: %llX\n", (unsigned long long)flash_checksum);
+        }
     }
     else {
         result = 1;
