@@ -11,7 +11,8 @@
  * emulator crashed refuses connections and is pruned here.
  *
  * Wire protocol (defined by emiu2's src/usb_socket.rs):
- *   hello    : "EMIU2USB"  version:u16le  identity_len:u32le  identity[..]
+ *   hello    : "EMIU2USB"  version:u16le  flags:u8 (bit0 = cable plugged)
+ *              identity_len:u32le  identity[..]
  *   request  : endpoint:u8  token:u8(0=Setup,1=In,2=Out)  len:u32le  data[len]
  *   response : kind:u8(0=Ack,1=Nak,2=Stall,3=Data) then, for Data,
  *              len:u32le data[len]
@@ -59,7 +60,12 @@
 #define EMU_DEVICE_PREFIX "emu:"
 
 #define EMU_HELLO_MAGIC "EMIU2USB"
-#define EMU_PROTOCOL_VERSION (1)
+#define EMU_PROTOCOL_VERSION (2)
+
+/* Hello flags bit: the emulator's USB cable is plugged in. The emulator owns
+ * that state (the player toggles it); when it is clear, nothing is on the bus
+ * and the endpoint closes right after the hello. */
+#define EMU_HELLO_FLAG_PLUGGED (0x01)
 
 /* Transaction tokens. */
 #define EMU_TOKEN_SETUP (0)
@@ -157,9 +163,9 @@ static int emu_recv_all(emu_sock_t sock, void* buf, size_t n) {
 }
 
 /* Reads the endpoint's hello. Returns 0 when it identifies a compatible
- * emulator, -1 otherwise. */
-static int emu_read_hello(emu_sock_t sock) {
-    unsigned char header[10];
+ * emulator (setting *plugged from the cable flag), -1 otherwise. */
+static int emu_read_hello(emu_sock_t sock, int* plugged) {
+    unsigned char header[11];
     if (emu_recv_all(sock, header, sizeof(header)) < 0) {
         return -1;
     }
@@ -171,6 +177,9 @@ static int emu_read_hello(emu_sock_t sock) {
     if (version != EMU_PROTOCOL_VERSION) {
         miuchiz_log("libmiuchiz: emulator endpoint protocol version %u not supported\n", version);
         return -1;
+    }
+    if (plugged != NULL) {
+        *plugged = (header[10] & EMU_HELLO_FLAG_PLUGGED) != 0;
     }
     unsigned char lenbuf[4];
     if (emu_recv_all(sock, lenbuf, sizeof(lenbuf)) < 0) {
@@ -500,7 +509,17 @@ void miuchiz_emu_open(struct Handheld* handheld) {
     if (sock == EMU_INVALID_SOCKET) {
         return;
     }
-    if (emu_read_hello(sock) < 0) {
+    int plugged = 0;
+    if (emu_read_hello(sock, &plugged) < 0) {
+        emu_close_socket(sock);
+        return;
+    }
+    if (!plugged) {
+        /* The emulator is running but its USB cable is unplugged - like a
+         * real handheld sitting next to the PC. The endpoint has already
+         * closed; do not treat it as an attached device. */
+        miuchiz_log("libmiuchiz: emulator at %s has its USB cable unplugged\n",
+                    handheld->device);
         emu_close_socket(sock);
         return;
     }
