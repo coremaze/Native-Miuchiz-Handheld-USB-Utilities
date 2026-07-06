@@ -27,6 +27,12 @@ sudo make install
   
   2) Navigate to the computer room on the handheld and use the computer. The Miuchiz can connect over USB.
 
+## Connecting an emulated Miuchiz (emiu2)
+
+  Running [emiu2](https://github.com/coremaze/emiu2) emulators are discovered automatically, alongside physical handhelds, and appear as `emu:` devices; every action works on them unchanged. Like a real device, an emulator only answers USB in its "Please Connect to PC" mode - start it with `--connect-mode` (or hold the whole D-pad while the virtual device boots).
+
+  Emulators are found through endpoint files in the emiu2 runtime directory (`$XDG_RUNTIME_DIR/emiu2-usb` on Linux, `%LOCALAPPDATA%\emiu2-usb` on Windows). If the tools and the emulator run under different environments (e.g. `sudo`), point both at the same directory with `EMIU2_USB_DIR`.
+
 ## Usage
 
 ### Dump flash

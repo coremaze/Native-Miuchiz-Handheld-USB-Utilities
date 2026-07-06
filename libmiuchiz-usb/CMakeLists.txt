@@ -22,8 +22,12 @@ set(MIUCHIZ_USB_SOURCES
     src/libmiuchiz-usb.c
     src/commands.c
     src/timer.c
-    src/log.c)
+    src/log.c
+    src/backend.c
+    src/backend-emu.c)
 
+# The platform (real hardware) backend behind the backend.c dispatch layer.
+# The emulator backend (backend-emu.c) is compiled on every platform.
 if(MIUCHIZ_USE_LIBUSB)
     list(APPEND MIUCHIZ_USB_SOURCES src/backend-libusb.c)
 elseif(WIN32)
@@ -34,6 +38,11 @@ endif()
 
 add_library(miuchiz-usb ${MIUCHIZ_USB_SOURCES})
 set_property(TARGET miuchiz-usb PROPERTY C_STANDARD 11)
+
+if(WIN32)
+    # The emulator backend reaches emiu2 over loopback TCP on Windows.
+    target_link_libraries(miuchiz-usb PRIVATE ws2_32)
+endif()
 
 # PUBLIC so consumers (the miuchiz executable) inherit the headers, the libusb
 # selection macro, and the libusb link/include flags automatically.

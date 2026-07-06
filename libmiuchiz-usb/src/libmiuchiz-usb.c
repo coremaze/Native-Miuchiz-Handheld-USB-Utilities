@@ -14,6 +14,7 @@ struct Handheld* miuchiz_handheld_create(const char* device) {
     struct Handheld* handheld = malloc(sizeof(struct Handheld));
 
     handheld->device = strdup(device);
+    handheld->emu = NULL;
     miuchiz_handheld_open(handheld);
 
     return handheld;

@@ -4,7 +4,7 @@
 // Not compiled when the libusb backend is selected.
 #if defined(_WIN32) && !defined(MIUCHIZ_USE_LIBUSB)
 
-#include "backend.h"
+#include "backend-internal.h"
 #include "timer.h"
 
 #include <stdio.h>
@@ -13,7 +13,7 @@
 #include <windows.h>
 #include <malloc.h>
 
-fp_t miuchiz_backend_open(struct Handheld* handheld) {
+fp_t miuchiz_platform_open(struct Handheld* handheld) {
     handheld->fd = CreateFileA(handheld->device,
                                GENERIC_READ | GENERIC_WRITE,
                                FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -24,14 +24,14 @@ fp_t miuchiz_backend_open(struct Handheld* handheld) {
     return handheld->fd;
 }
 
-void miuchiz_backend_close(struct Handheld* handheld) {
+void miuchiz_platform_close(struct Handheld* handheld) {
     if (handheld->fd != INVALID_HANDLE_VALUE) {
         CloseHandle(handheld->fd);
         handheld->fd = INVALID_HANDLE_VALUE;
     }
 }
 
-ssize_t miuchiz_backend_read(struct Handheld* handheld, void* buf, size_t n) {
+ssize_t miuchiz_platform_read(struct Handheld* handheld, void* buf, size_t n) {
     if (handheld->fd == INVALID_HANDLE_VALUE) {
         return -1;
     }
@@ -42,7 +42,7 @@ ssize_t miuchiz_backend_read(struct Handheld* handheld, void* buf, size_t n) {
     return dresult;
 }
 
-ssize_t miuchiz_backend_write(struct Handheld* handheld, const void* buf, size_t n) {
+ssize_t miuchiz_platform_write(struct Handheld* handheld, const void* buf, size_t n) {
     /*
     Writing to the device without giving it enough time will make it stop
     working.
@@ -75,14 +75,14 @@ ssize_t miuchiz_backend_write(struct Handheld* handheld, const void* buf, size_t
     return result;
 }
 
-off_t miuchiz_backend_seek(struct Handheld* handheld, off_t offset) {
+off_t miuchiz_platform_seek(struct Handheld* handheld, off_t offset) {
     if (handheld->fd == INVALID_HANDLE_VALUE) {
         return -1;
     }
     return SetFilePointer(handheld->fd, offset, 0, FILE_BEGIN);
 }
 
-int miuchiz_backend_enumerate(struct Handheld*** handhelds) {
+int miuchiz_platform_enumerate(struct Handheld*** handhelds) {
     int handhelds_count = 0;
     *handhelds = NULL;
 
@@ -121,16 +121,16 @@ int miuchiz_backend_enumerate(struct Handheld*** handhelds) {
     return handhelds_count;
 }
 
-void* miuchiz_backend_dma_alloc(size_t size) {
+void* miuchiz_platform_dma_alloc(size_t size) {
     size_t alignment = (size_t)miuchiz_page_alignment();
     return _aligned_malloc(size, alignment);
 }
 
-void miuchiz_backend_dma_free(void* p) {
+void miuchiz_platform_dma_free(void* p) {
     _aligned_free(p);
 }
 
-long miuchiz_backend_page_alignment(void) {
+long miuchiz_platform_page_alignment(void) {
     return 4096;
 }
 
