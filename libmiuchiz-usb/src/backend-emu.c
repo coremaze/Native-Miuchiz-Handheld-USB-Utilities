@@ -572,40 +572,85 @@ off_t miuchiz_emu_seek(struct Handheld* handheld, off_t offset) {
  * Discovery.
  * ------------------------------------------------------------------------ */
 
-/* The runtime directories emulators publish endpoints in. Must mirror
- * emiu2's endpoint_dir(): EMIU2_USB_DIR overrides everything; otherwise
- * $XDG_RUNTIME_DIR/emiu2-usb (with /tmp/emiu2-usb as the no-XDG fallback) on
- * Unix, %LOCALAPPDATA%\emiu2-usb on Windows. Both Unix candidates are scanned
- * so a tool and an emulator with different environments still meet. */
-static int emu_endpoint_dirs(char dirs[][512], int max_dirs) {
-    int count = 0;
-
-    const char* override = getenv("EMIU2_USB_DIR");
-    if (override != NULL && override[0] != '\0') {
-        snprintf(dirs[count++], 512, "%s", override);
-        return count;
+/* Mirrors the *runtime* category of the Miuchiz Reborn storage-location
+ * policy. The authoritative implementation is the miuchiz-reborn-paths Rust
+ * crate; its test-vectors.txt is the shared conformance suite (vendored under
+ * tests/ and run by the paths-conformance test - keep all three in sync).
+ *
+ *   MIUCHIZ_REBORN_HOME set  ->  <home>/runtime/<app>
+ *   else the OS runtime dir  ->  <runtime>/<umbrella>/<app>
+ *        (only Linux has one: $XDG_RUNTIME_DIR, absolute paths only)
+ *   else the system temp dir ->  <temp>/<umbrella>/<app>
+ *
+ * The umbrella is "Miuchiz Reborn" on Windows/macOS and "miuchiz-reborn"
+ * elsewhere. Returns 0 on success, -1 on failure. */
+int miuchiz_emu_runtime_dir(const char* app, char* buf, size_t bufn) {
+    const char* home = getenv("MIUCHIZ_REBORN_HOME");
+    if (home != NULL && home[0] != '\0') {
+        int n = snprintf(buf, bufn, "%s/runtime/%s", home, app);
+        return (n > 0 && (size_t)n < bufn) ? 0 : -1;
     }
+
+    /* Base directory joins must tolerate a trailing separator on the env
+     * value (macOS $TMPDIR famously has one) the way path joins do. */
+    char base[1024];
 
 #if defined(_WIN32)
-    const char* local = getenv("LOCALAPPDATA");
-    if (local != NULL && local[0] != '\0' && count < max_dirs) {
-        snprintf(dirs[count++], 512, "%s\\emiu2-usb", local);
+    DWORD len = GetTempPathA(sizeof(base), base);
+    if (len == 0 || len >= sizeof(base)) {
+        return -1;
     }
-    const char* temp = getenv("TEMP");
-    if (temp != NULL && temp[0] != '\0' && count < max_dirs) {
-        snprintf(dirs[count++], 512, "%s\\emiu2-usb", temp);
+    while (len > 1 && (base[len - 1] == '\\' || base[len - 1] == '/')) {
+        base[--len] = '\0';
     }
+    int n = snprintf(buf, bufn, "%s\\Miuchiz Reborn\\%s", base, app);
+    return (n > 0 && (size_t)n < bufn) ? 0 : -1;
 #else
-    const char* runtime = getenv("XDG_RUNTIME_DIR");
-    if (runtime != NULL && runtime[0] != '\0' && count < max_dirs) {
-        snprintf(dirs[count++], 512, "%s/emiu2-usb", runtime);
-    }
-    if (count < max_dirs) {
-        snprintf(dirs[count++], 512, "/tmp/emiu2-usb");
-    }
-#endif
+    const char* root = NULL;
+    const char* umbrella = NULL;
 
-    return count;
+    #if defined(__APPLE__)
+        umbrella = "Miuchiz Reborn";
+    #else
+        umbrella = "miuchiz-reborn";
+        const char* xdg = getenv("XDG_RUNTIME_DIR");
+        if (xdg != NULL && xdg[0] == '/') {
+            root = xdg;
+        }
+    #endif
+
+    if (root == NULL) {
+        root = getenv("TMPDIR");
+        if (root == NULL || root[0] == '\0') {
+            root = "/tmp";
+        }
+    }
+
+    size_t len = strlen(root);
+    if (len >= sizeof(base)) {
+        return -1;
+    }
+    strcpy(base, root);
+    while (len > 1 && base[len - 1] == '/') {
+        base[--len] = '\0';
+    }
+
+    int n = snprintf(buf, bufn, "%s/%s/%s", base, umbrella, app);
+    return (n > 0 && (size_t)n < bufn) ? 0 : -1;
+#endif
+}
+
+/* The directory emulators publish USB endpoints in: emiu2's runtime
+ * directory per the shared policy above, with EMIU2_USB_DIR as a narrower,
+ * higher-priority override of just this directory (both matched by emiu2's
+ * endpoint_dir()). Returns 0 on success. */
+int miuchiz_emu_endpoint_dir(char* buf, size_t bufn) {
+    const char* override = getenv("EMIU2_USB_DIR");
+    if (override != NULL && override[0] != '\0') {
+        int n = snprintf(buf, bufn, "%s", override);
+        return (n > 0 && (size_t)n < bufn) ? 0 : -1;
+    }
+    return miuchiz_emu_runtime_dir("emiu2", buf, bufn);
 }
 
 static int emu_is_endpoint_file(const char* name) {
@@ -673,8 +718,11 @@ int miuchiz_emu_enumerate(struct Handheld*** handhelds) {
     int capacity = 0;
     *handhelds = NULL;
 
-    char dirs[2][512];
-    int ndirs = emu_endpoint_dirs(dirs, 2);
+    char dirs[1][1024];
+    if (miuchiz_emu_endpoint_dir(dirs[0], sizeof(dirs[0])) != 0) {
+        return 0;
+    }
+    int ndirs = 1;
 
     for (int d = 0; d < ndirs; d++) {
 #if defined(_WIN32)

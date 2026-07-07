@@ -44,6 +44,17 @@ if(WIN32)
     target_link_libraries(miuchiz-usb PRIVATE ws2_32)
 endif()
 
+# Conformance test for the shared Miuchiz Reborn path policy: runs the vector
+# suite vendored from the miuchiz-reborn-paths repository against this
+# library's C implementation. Run with ctest.
+if(BUILD_TESTING)
+    add_executable(paths-conformance tests/paths-conformance.c)
+    target_link_libraries(paths-conformance PRIVATE miuchiz-usb)
+    target_include_directories(paths-conformance PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    add_test(NAME paths-conformance
+             COMMAND paths-conformance ${CMAKE_CURRENT_SOURCE_DIR}/tests/test-vectors.txt)
+endif()
+
 # PUBLIC so consumers (the miuchiz executable) inherit the headers, the libusb
 # selection macro, and the libusb link/include flags automatically.
 target_include_directories(miuchiz-usb PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

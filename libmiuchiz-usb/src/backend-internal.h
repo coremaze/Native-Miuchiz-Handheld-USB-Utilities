@@ -34,6 +34,21 @@ long miuchiz_platform_page_alignment(void);
 /** Whether this handheld's device string names an emulator endpoint. */
 int miuchiz_emu_is(const struct Handheld* handheld);
 
+/**
+ * Resolves `app`'s runtime directory per the shared Miuchiz Reborn
+ * storage-location policy (mirrors the miuchiz-reborn-paths crate; verified
+ * against its vendored test vectors by the paths-conformance test).
+ * @return 0 on success, -1 on failure.
+ */
+int miuchiz_emu_runtime_dir(const char* app, char* buf, size_t bufn);
+
+/**
+ * The directory emulators publish USB endpoints in: emiu2's runtime
+ * directory, or the EMIU2_USB_DIR override.
+ * @return 0 on success, -1 on failure.
+ */
+int miuchiz_emu_endpoint_dir(char* buf, size_t bufn);
+
 void miuchiz_emu_open(struct Handheld* handheld);
 void miuchiz_emu_close(struct Handheld* handheld);
 ssize_t miuchiz_emu_read(struct Handheld* handheld, void* buf, size_t n);

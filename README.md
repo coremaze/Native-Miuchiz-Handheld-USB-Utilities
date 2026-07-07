@@ -31,7 +31,7 @@ sudo make install
 
   Running [emiu2](https://github.com/coremaze/emiu2) emulators are discovered automatically, alongside physical handhelds, and appear as `emu:` devices; every action works on them unchanged. The emulator's USB cable is plugged and unplugged with the U key (or `--usb-plugged` at startup), and like a real device, the handheld only answers USB in its "Please Connect to PC" mode - start the emulator with `--connect-mode` to boot straight into it with the cable plugged.
 
-  Emulators are found through endpoint files in the emiu2 runtime directory (`$XDG_RUNTIME_DIR/emiu2-usb` on Linux, `%LOCALAPPDATA%\emiu2-usb` on Windows). If the tools and the emulator run under different environments (e.g. `sudo`), point both at the same directory with `EMIU2_USB_DIR`.
+  Emulators are found through endpoint files in emiu2's runtime directory under the shared [Miuchiz Reborn path policy](https://github.com/coremaze/Miuchiz-Reborn-Paths) (`$XDG_RUNTIME_DIR/miuchiz-reborn/emiu2` on Linux, `%TMP%\Miuchiz Reborn\emiu2` on Windows). `MIUCHIZ_REBORN_HOME` reroots the whole policy; if the tools and the emulator run under different environments (e.g. `sudo`), point both at the same directory with either that or the narrower `EMIU2_USB_DIR` override.
 
 ## Usage
 
