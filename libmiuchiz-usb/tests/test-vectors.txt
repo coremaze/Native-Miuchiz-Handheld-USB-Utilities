@@ -1,0 +1,35 @@
+# VENDORED from https://github.com/coremaze/Miuchiz-Reborn-Paths (test-vectors.txt).
+# That copy is canonical; update this one when the policy changes.
+# Shared conformance vectors for the Miuchiz Reborn storage-location policy.
+#
+# Every implementation of the policy (this crate; libmiuchiz-usb's C endpoint
+# discovery; anything else) runs these vectors in its test suite. Change the
+# policy => change this file => every implementation follows or fails.
+#
+# Format, one vector per line:
+#   <platforms>|<env>|<category>|<app>|<expected>
+#
+#   platforms: which OS the vector applies to: all, linux, macos, windows
+#   env:       comma-separated KEY=VALUE assignments applied before resolving;
+#              a bare "KEY=" means the variable must be unset
+#   category:  config | data | cache | state | runtime
+#   expected:  the resolved directory
+#
+# Comparisons are made after normalizing '\' to '/', so "all" vectors work on
+# Windows. Vectors avoid depending on HOME or the OS known-folder locations;
+# only behavior that is fully determined by the listed variables is specified
+# here, which is exactly the behavior implementations must agree on.
+
+# --- MIUCHIZ_REBORN_HOME reroots every category: <home>/<category>/<app> ---
+all|MIUCHIZ_REBORN_HOME=/mr|config|launcher|/mr/config/launcher
+all|MIUCHIZ_REBORN_HOME=/mr|data|emiu2|/mr/data/emiu2
+all|MIUCHIZ_REBORN_HOME=/mr|cache|emiu2|/mr/cache/emiu2
+all|MIUCHIZ_REBORN_HOME=/mr|state|emiu2|/mr/state/emiu2
+all|MIUCHIZ_REBORN_HOME=/mr|runtime|emiu2|/mr/runtime/emiu2
+
+# --- runtime: the OS runtime dir, else the system temp dir ------------------
+linux|MIUCHIZ_REBORN_HOME=,XDG_RUNTIME_DIR=/run/user/1000|runtime|emiu2|/run/user/1000/miuchiz-reborn/emiu2
+linux|MIUCHIZ_REBORN_HOME=,XDG_RUNTIME_DIR=,TMPDIR=/mytmp|runtime|emiu2|/mytmp/miuchiz-reborn/emiu2
+linux|MIUCHIZ_REBORN_HOME=,XDG_RUNTIME_DIR=,TMPDIR=|runtime|emiu2|/tmp/miuchiz-reborn/emiu2
+macos|MIUCHIZ_REBORN_HOME=,TMPDIR=/mactmp|runtime|emiu2|/mactmp/Miuchiz Reborn/emiu2
+windows|MIUCHIZ_REBORN_HOME=,TMP=C:\t|runtime|emiu2|C:/t/Miuchiz Reborn/emiu2

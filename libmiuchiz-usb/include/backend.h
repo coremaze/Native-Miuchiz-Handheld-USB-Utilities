@@ -4,10 +4,14 @@
 #include "libmiuchiz-usb.h"
 
 /*
- * Internal platform backend interface.
+ * Internal backend interface.
  *
- * Exactly one backend is compiled into the library, selected at configure time
- * (see MIUCHIZ_USE_LIBUSB in libmiuchiz-usb.h and CMakeLists.txt):
+ * These functions are per-handle dispatchers (backend.c): a handheld whose
+ * device string starts with "emu:" is a running emiu2 emulator instance,
+ * reached over a local socket (backend-emu.c, compiled on every platform);
+ * anything else goes to the platform backend, of which exactly one is
+ * compiled in, selected at configure time (see MIUCHIZ_USE_LIBUSB in
+ * libmiuchiz-usb.h and CMakeLists.txt):
  *
  *   - backend-libusb.c   libusb transport (required on macOS, optional on Linux)
  *   - backend-linux.c    native /dev/sd* SCSI block device
@@ -15,6 +19,7 @@
  *
  * The platform-independent core in libmiuchiz-usb.c talks to a device
  * exclusively through these functions, so it contains no per-OS #ifdefs.
+ * miuchiz_backend_enumerate returns real and emulated handhelds together.
  */
 
 /**

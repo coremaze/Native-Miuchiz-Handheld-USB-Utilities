@@ -4,7 +4,7 @@
 // /dev/sd*. Not compiled when the libusb backend is selected.
 #if (defined(unix) || defined(__unix__) || defined(__unix)) && !defined(MIUCHIZ_USE_LIBUSB)
 
-#include "backend.h"
+#include "backend-internal.h"
 #include "timer.h"
 
 #include <stdio.h>
@@ -14,26 +14,26 @@
 #include <unistd.h>
 #include <glob.h>
 
-fp_t miuchiz_backend_open(struct Handheld* handheld) {
+fp_t miuchiz_platform_open(struct Handheld* handheld) {
     handheld->fd = open(handheld->device, O_RDWR | __O_DIRECT | O_NONBLOCK | O_SYNC);
     return handheld->fd;
 }
 
-void miuchiz_backend_close(struct Handheld* handheld) {
+void miuchiz_platform_close(struct Handheld* handheld) {
     if (handheld->fd != -1) {
         close(handheld->fd);
         handheld->fd = -1;
     }
 }
 
-ssize_t miuchiz_backend_read(struct Handheld* handheld, void* buf, size_t n) {
+ssize_t miuchiz_platform_read(struct Handheld* handheld, void* buf, size_t n) {
     if (handheld->fd == -1) {
         return -1;
     }
     return read(handheld->fd, buf, n);
 }
 
-ssize_t miuchiz_backend_write(struct Handheld* handheld, const void* buf, size_t n) {
+ssize_t miuchiz_platform_write(struct Handheld* handheld, const void* buf, size_t n) {
     /*
     Writing to the device without giving it enough time will make it stop
     working. Even though write() shouldn't return early due to O_DIRECT,
@@ -56,14 +56,14 @@ ssize_t miuchiz_backend_write(struct Handheld* handheld, const void* buf, size_t
     return result;
 }
 
-off_t miuchiz_backend_seek(struct Handheld* handheld, off_t offset) {
+off_t miuchiz_platform_seek(struct Handheld* handheld, off_t offset) {
     if (handheld->fd == -1) {
         return -1;
     }
     return lseek(handheld->fd, offset, SEEK_SET);
 }
 
-int miuchiz_backend_enumerate(struct Handheld*** handhelds) {
+int miuchiz_platform_enumerate(struct Handheld*** handhelds) {
     int handhelds_count = 0;
     *handhelds = NULL;
 
@@ -92,18 +92,18 @@ int miuchiz_backend_enumerate(struct Handheld*** handhelds) {
     return handhelds_count;
 }
 
-void* miuchiz_backend_dma_alloc(size_t size) {
+void* miuchiz_platform_dma_alloc(size_t size) {
     size_t alignment = (size_t)miuchiz_page_alignment();
     // aligned_alloc requires the size to be a multiple of the alignment.
     size_t alloc_size = miuchiz_round_size_up(size, (int)alignment);
     return aligned_alloc(alignment, alloc_size);
 }
 
-void miuchiz_backend_dma_free(void* p) {
+void miuchiz_platform_dma_free(void* p) {
     free(p);
 }
 
-long miuchiz_backend_page_alignment(void) {
+long miuchiz_platform_page_alignment(void) {
     return sysconf(_SC_PAGESIZE);
 }
 

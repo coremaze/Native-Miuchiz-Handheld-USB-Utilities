@@ -2,7 +2,7 @@
 
 #if defined(MIUCHIZ_USE_LIBUSB)
 
-#include "backend.h"
+#include "backend-internal.h"
 #include "timer.h"
 #include "log.h"
 
@@ -29,7 +29,7 @@
 #define CSW_RESYNC (2) // CSW invalid or out of sync (bad signature/tag, or phase error)
 
 // libusb's default context is reference counted; initialise it once, lazily,
-// so the backend works whether the caller went through miuchiz_backend_enumerate
+// so the backend works whether the caller went through miuchiz_platform_enumerate
 // or created a handheld directly by device string.
 static void miuchiz_libusb_cleanup(void) {
     libusb_exit(NULL);
@@ -307,7 +307,7 @@ static ssize_t scsi_bulk_read(libusb_device_handle *handle, uint32_t sector, voi
     goto read_start;
 }
 
-fp_t miuchiz_backend_open(struct Handheld* handheld) {
+fp_t miuchiz_platform_open(struct Handheld* handheld) {
     ensure_libusb_init();
 
     handheld->fd.handle = NULL;
@@ -369,7 +369,7 @@ fp_t miuchiz_backend_open(struct Handheld* handheld) {
     return handheld->fd;
 }
 
-void miuchiz_backend_close(struct Handheld* handheld) {
+void miuchiz_platform_close(struct Handheld* handheld) {
     if (handheld->fd.handle != NULL) {
         libusb_release_interface(handheld->fd.handle, 0);
         // Best effort: hand the device back to the OS. Not supported on every
@@ -380,14 +380,14 @@ void miuchiz_backend_close(struct Handheld* handheld) {
     }
 }
 
-ssize_t miuchiz_backend_read(struct Handheld* handheld, void* buf, size_t n) {
+ssize_t miuchiz_platform_read(struct Handheld* handheld, void* buf, size_t n) {
     if (handheld->fd.handle == NULL) {
         return -1;
     }
     return scsi_bulk_read(handheld->fd.handle, handheld->fd.current_sector, buf, n);
 }
 
-ssize_t miuchiz_backend_write(struct Handheld* handheld, const void* buf, size_t n) {
+ssize_t miuchiz_platform_write(struct Handheld* handheld, const void* buf, size_t n) {
     /*
     Same workaround as the native backend: the device's firmware misbehaves
     (pipe errors) when operated on too quickly, so we time the write and then
@@ -410,12 +410,12 @@ ssize_t miuchiz_backend_write(struct Handheld* handheld, const void* buf, size_t
     return result;
 }
 
-off_t miuchiz_backend_seek(struct Handheld* handheld, off_t offset) {
+off_t miuchiz_platform_seek(struct Handheld* handheld, off_t offset) {
     handheld->fd.current_sector = offset / MIUCHIZ_SECTOR_SIZE;
     return 0;
 }
 
-int miuchiz_backend_enumerate(struct Handheld*** handhelds) {
+int miuchiz_platform_enumerate(struct Handheld*** handhelds) {
     int handhelds_count = 0;
     // Whether a device with the Miuchiz vendor/product id is on the bus, even if
     // we cannot open or read it. Reading USB descriptors is never gated by OS
@@ -476,17 +476,17 @@ int miuchiz_backend_enumerate(struct Handheld*** handhelds) {
     return handhelds_count;
 }
 
-void* miuchiz_backend_dma_alloc(size_t size) {
+void* miuchiz_platform_dma_alloc(size_t size) {
     void* ptr = malloc(size);
     // memset(ptr, 0xCA, size); // Makes it easier to spot usage of uninitialized memory
     return ptr;
 }
 
-void miuchiz_backend_dma_free(void* p) {
+void miuchiz_platform_dma_free(void* p) {
     free(p);
 }
 
-long miuchiz_backend_page_alignment(void) {
+long miuchiz_platform_page_alignment(void) {
     // The libusb transfers go through plain malloc'd buffers, so any alignment
     // works; report the OS page size to keep behaviour consistent with the
     // native backends.
