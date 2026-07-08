@@ -14,8 +14,10 @@
  *   hello    : "EMIU2USB"  version:u16le  flags:u8 (bit0 = cable plugged)
  *              identity_len:u32le  identity[..]
  *   request  : endpoint:u8  token:u8(0=Setup,1=In,2=Out)  len:u32le  data[len]
- *   response : kind:u8(0=Ack,1=Nak,2=Stall,3=Data) then, for Data,
- *              len:u32le data[len]
+ *   response : kind:u8(0=Ack,1=Nak,2=Stall,3=Data,4=Detached) then, for
+ *              Data, len:u32le data[len]. Detached means the device is not
+ *              on the bus (its USB block is off - never brought up, or torn
+ *              down by an eject); it is a final answer, never retried.
  *
  * On top of those raw transactions this file implements the same USB Mass
  * Storage Bulk-Only Transport + SCSI the libusb backend implements on real
@@ -60,7 +62,7 @@
 #define EMU_DEVICE_PREFIX "emu:"
 
 #define EMU_HELLO_MAGIC "EMIU2USB"
-#define EMU_PROTOCOL_VERSION (2)
+#define EMU_PROTOCOL_VERSION (3)
 
 /* Hello flags bit: the emulator's USB cable is plugged in. The emulator owns
  * that state (the player toggles it); when it is clear, nothing is on the bus
@@ -73,11 +75,12 @@
 #define EMU_TOKEN_OUT   (2)
 
 /* Response kinds. */
-#define EMU_RESP_ACK   (0)
-#define EMU_RESP_NAK   (1)
-#define EMU_RESP_STALL (2)
-#define EMU_RESP_DATA  (3)
-#define EMU_RESP_ERROR (-1) /* transport failure */
+#define EMU_RESP_ACK      (0)
+#define EMU_RESP_NAK      (1)
+#define EMU_RESP_STALL    (2)
+#define EMU_RESP_DATA     (3)
+#define EMU_RESP_DETACHED (4) /* device off the bus (SIE down / ejected) */
+#define EMU_RESP_ERROR    (-1) /* transport failure */
 
 /* Endpoint numbers on the emulated device (0 = control, 1 = bulk). */
 #define EMU_ENDPOINT_BULK (1)
@@ -306,7 +309,7 @@ static int emu_transact(struct EmuHandheld* emu,
         return EMU_RESP_ERROR;
     }
     if (kind != EMU_RESP_DATA) {
-        return kind <= EMU_RESP_STALL ? kind : EMU_RESP_ERROR;
+        return kind <= EMU_RESP_DETACHED ? kind : EMU_RESP_ERROR;
     }
 
     unsigned char lenbuf[4];
@@ -368,6 +371,10 @@ static int emu_bulk_out(struct EmuHandheld* emu, const void* buf, size_t n) {
         size_t chunk = n < EMU_BULK_MAX ? n : EMU_BULK_MAX;
         int kind = emu_transact_retry(emu, EMU_ENDPOINT_BULK, EMU_TOKEN_OUT,
                                       p, chunk, NULL, 0, NULL);
+        if (kind == EMU_RESP_DETACHED) {
+            miuchiz_log("libmiuchiz: bulk OUT failed: device detached (off the bus)\n");
+            return -1;
+        }
         if (kind != EMU_RESP_ACK) {
             miuchiz_log("libmiuchiz: bulk OUT not accepted (kind %d)\n", kind);
             return -1;
@@ -389,6 +396,10 @@ static ssize_t emu_bulk_in(struct EmuHandheld* emu, void* buf, size_t n) {
         size_t packet_len = 0;
         int kind = emu_transact_retry(emu, EMU_ENDPOINT_BULK, EMU_TOKEN_IN,
                                       NULL, 0, packet, sizeof(packet), &packet_len);
+        if (kind == EMU_RESP_DETACHED) {
+            miuchiz_log("libmiuchiz: bulk IN failed: device detached (off the bus)\n");
+            return -1;
+        }
         if (kind != EMU_RESP_DATA) {
             miuchiz_log("libmiuchiz: bulk IN failed (kind %d)\n", kind);
             return -1;
