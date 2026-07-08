@@ -86,8 +86,9 @@
 #define EMU_ENDPOINT_BULK (1)
 
 /* The device services one transaction per ~1 ms; a NAK means "not staged yet,
- * ask again". The budget bounds how long one logical transfer step may stall
- * (also how long probing a non-USB-mode emulator takes before giving up). */
+ * ask again". The budget bounds how long one logical transfer step may stall.
+ * (A device that is off the bus answers Detached, not NAK, so dead devices
+ * fail immediately rather than through this budget.) */
 #define EMU_NAK_RETRIES (2000)
 #define EMU_NAK_WAIT_US (500)
 

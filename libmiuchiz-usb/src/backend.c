@@ -7,9 +7,9 @@
 
 /*
  * Per-handle transport dispatch. The platform backend (compiled in at
- * configure time, as before) reaches real hardware; the emulator backend
- * reaches running emiu2 instances over a local socket. A handheld's transport
- * is decided by its device string: "emu:..." is an emulator, anything else
+ * configure time) reaches real hardware; the emulator backend reaches
+ * running emiu2 instances over a local socket. A handheld's transport is
+ * decided by its device string: "emu:..." is an emulator, anything else
  * belongs to the platform backend.
  */
 

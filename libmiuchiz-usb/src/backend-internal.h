@@ -8,7 +8,7 @@
  *
  * miuchiz_platform_*: real hardware, exactly one implementation compiled in
  * (backend-linux.c / backend-windows.c / backend-libusb.c, selected at
- * configure time as before).
+ * configure time).
  *
  * miuchiz_emu_*: a running emiu2 emulator instance, reached over a local
  * socket (backend-emu.c, compiled on every platform). Emulator handhelds are

@@ -76,10 +76,10 @@
 struct Handheld {
     char* device;
     fp_t fd;
-    /* Emulator transport state (owned by the library). Non-NULL only while a
-     * handheld whose device string starts with "emu:" - a running emiu2
-     * emulator instance reached over a local socket - is open. Real-hardware
-     * handhelds keep their state in fd, exactly as before. */
+    /* Emulator transport state (owned by the library): non-NULL only while
+     * an "emu:" handheld - a running emiu2 emulator instance reached over a
+     * local socket - is open. Real-hardware handhelds keep their state in
+     * fd. */
     void* emu;
 };
 
