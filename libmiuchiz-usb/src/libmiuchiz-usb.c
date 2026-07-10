@@ -2,11 +2,15 @@
 #include "backend.h"
 #include "commands.h"
 #include "log.h"
+#include "sleep.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+
+#define MIUCHIZ_PAGE_ATTEMPTS (3)
+#define MIUCHIZ_RETRY_DELAY_MS (50)
 
 // Exposed functions
 
@@ -141,51 +145,59 @@ int miuchiz_handheld_read_page(struct Handheld* handheld, int page, void* buf, s
         return MIUCHIZ_ERROR_PAGE_SIZE;
     }
 
-    int read_result;
-
-    // Write initiator to command interface
-    {
-        struct SCSIWriteFilemarksCommand cmd = miuchiz_scsi_write_filemarks_command();
-        miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
+    // The response will look like this:
+    // 4 bytes length, big endian
+    // length of data, but we fill with the size requested
+    size_t page_data_size = sizeof(int32_t) + nbuf;
+    unsigned char* page_data = malloc(page_data_size);
+    if (page_data == NULL) {
+        miuchiz_log("miuchiz_handheld_read_page: allocation failed\n");
+        return MIUCHIZ_ERROR_IO;
     }
 
-    // Tell command interface we want to read from this page
-    {
-        struct SCSIReadCommand cmd = miuchiz_scsi_read_command(page);
-        miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
-    }
+    int read_result = MIUCHIZ_ERROR_IO;
 
-    // Read response data from device's data output interface
-    {
-        // The response will look like this:
-        // 4 bytes length, big endian
-        // length of data, but we fill with the size requested
+    for (int attempt = 0; attempt < MIUCHIZ_PAGE_ATTEMPTS; attempt++) {
+        if (attempt > 0) {
+            miuchiz_log("miuchiz_handheld_read_page: retrying page %d (attempt %d of %d)\n",
+                        page, attempt + 1, MIUCHIZ_PAGE_ATTEMPTS);
+            miuchiz_sleep_ms(MIUCHIZ_RETRY_DELAY_MS);
+        }
 
-        size_t page_data_size = sizeof(int32_t) + nbuf;
-        unsigned char* page_data = malloc(page_data_size);
-        if (page_data == NULL) {
-            miuchiz_log("miuchiz_handheld_read_page: allocation failed\n");
-            read_result = MIUCHIZ_ERROR_IO;
+        // Write initiator to command interface
+        {
+            struct SCSIWriteFilemarksCommand cmd = miuchiz_scsi_write_filemarks_command();
+            miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
+        }
+
+        // Tell command interface we want to read from this page
+        {
+            struct SCSIReadCommand cmd = miuchiz_scsi_read_command(page);
+            miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
+        }
+
+        // Read response data from device's data output interface
+        read_result = miuchiz_handheld_read_sector(handheld, MIUCHIZ_SECTOR_DATA_READ, page_data, page_data_size);
+        if (read_result >= 0) {
+            // Skip the length bytes
+            memcpy(buf, page_data + sizeof(int32_t), nbuf);
         }
         else {
-            read_result = miuchiz_handheld_read_sector(handheld, MIUCHIZ_SECTOR_DATA_READ, page_data, page_data_size);
-            if (read_result >= 0) {
-                // Skip the length bytes
-                memcpy(buf, page_data + sizeof(int32_t), nbuf);
-            }
-            else {
-                miuchiz_log("miuchiz_handheld_read_sector failed in read_page. [%d] %s\n", errno, strerror(errno));
-            }
-            free(page_data);
+            miuchiz_log("miuchiz_handheld_read_sector failed in read_page. [%d] %s\n", errno, strerror(errno));
+        }
+
+        // Send terminator to command interface
+        {
+            struct SCSIReadReverseCommand cmd = miuchiz_scsi_read_reverse_command();
+            miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
+        }
+
+        if (read_result != MIUCHIZ_ERROR_IO) {
+            break; // success, or an error retrying can't change
         }
     }
 
-    // Send terminator to command interface
-    {
-        struct SCSIReadReverseCommand cmd = miuchiz_scsi_read_reverse_command();
-        miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
-    }
-
+    free(page_data);
     return read_result;
 }
 
@@ -194,31 +206,67 @@ int miuchiz_handheld_write_page(struct Handheld* handheld, int page, const void*
         return MIUCHIZ_ERROR_PAGE_SIZE;
     }
 
-    int write_result;
-
-    // Write initiator to command interface
-    {
-        struct SCSIWriteFilemarksCommand cmd = miuchiz_scsi_write_filemarks_command();
-        miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
+    unsigned char* verify_buf = malloc(nbuf);
+    if (verify_buf == NULL) {
+        miuchiz_log("miuchiz_handheld_write_page: allocation failed\n");
+        return MIUCHIZ_ERROR_IO;
     }
 
-    // Tell command interface we want to write to this page
-    {
-        struct SCSIWriteCommand cmd = miuchiz_scsi_write_command(page, nbuf);
-        miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
+    int write_result = MIUCHIZ_ERROR_IO;
+
+    for (int attempt = 0; attempt < MIUCHIZ_PAGE_ATTEMPTS; attempt++) {
+        if (attempt > 0) {
+            miuchiz_log("miuchiz_handheld_write_page: retrying page %d (attempt %d of %d)\n",
+                        page, attempt + 1, MIUCHIZ_PAGE_ATTEMPTS);
+            miuchiz_sleep_ms(MIUCHIZ_RETRY_DELAY_MS);
+        }
+
+        // Write initiator to command interface
+        {
+            struct SCSIWriteFilemarksCommand cmd = miuchiz_scsi_write_filemarks_command();
+            miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
+        }
+
+        // Tell command interface we want to write to this page
+        {
+            struct SCSIWriteCommand cmd = miuchiz_scsi_write_command(page, nbuf);
+            miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
+        }
+
+        // Put our data into the data input interface
+        {
+            write_result = miuchiz_handheld_write_sector(handheld, MIUCHIZ_SECTOR_DATA_WRITE, buf, nbuf);
+        }
+
+        // Send terminator to command interface
+        {
+            struct SCSIReadReverseCommand cmd = miuchiz_scsi_read_reverse_command();
+            miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
+        }
+
+        if (write_result == MIUCHIZ_ERROR_IO) {
+            continue;
+        }
+        if (write_result < 0) {
+            break; // an error retrying can't change
+        }
+
+        if (attempt > 0) {
+            // If there were prior failures, verify the page.
+            if (miuchiz_handheld_read_page(handheld, page, verify_buf, nbuf) >= 0 && memcmp(verify_buf, buf, nbuf) == 0) {
+                // Verified okay
+                break;
+            }
+            miuchiz_log("miuchiz_handheld_write_page: verification of page %d failed; rewriting\n", page);
+            write_result = MIUCHIZ_ERROR_IO;
+        }
+        else {
+            // No need to verify
+            break;
+        }
     }
 
-    // Put our data into the data input interface
-    {
-        write_result = miuchiz_handheld_write_sector(handheld, MIUCHIZ_SECTOR_DATA_WRITE, buf, nbuf);
-    }
-
-    // Send terminator to command interface
-    {
-        struct SCSIReadReverseCommand cmd = miuchiz_scsi_read_reverse_command();
-        miuchiz_handheld_send_scsi(handheld, &cmd, sizeof(cmd));
-    }
-
+    free(verify_buf);
     return write_result;
 }
 

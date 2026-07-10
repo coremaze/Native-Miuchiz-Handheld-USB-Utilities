@@ -19,12 +19,13 @@ if(APPLE AND NOT MIUCHIZ_USE_LIBUSB)
 endif()
 
 set(MIUCHIZ_USB_SOURCES
+    src/backend-emu.c
     src/libmiuchiz-usb.c
     src/commands.c
     src/timer.c
+    src/sleep.c
     src/log.c
-    src/backend.c
-    src/backend-emu.c)
+    src/backend.c)
 
 # The platform (real hardware) backend behind the backend.c dispatch layer.
 # The emulator backend (backend-emu.c) is compiled on every platform.
