@@ -49,6 +49,11 @@
         uint32_t current_sector;
     } fp_t;
 #elif defined(_WIN32)
+    /* Block the legacy winsock.h that <windows.h> would otherwise pull in; the
+     * emulator backend includes <winsock2.h>, and the two cannot coexist. */
+    #ifndef _WINSOCKAPI_
+    #define _WINSOCKAPI_
+    #endif
     #include <windows.h>
     typedef HANDLE fp_t;
 #elif defined(unix) || defined(__unix__) || defined(__unix)
